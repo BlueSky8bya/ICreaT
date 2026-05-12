@@ -1,0 +1,21 @@
+[
+  {
+    "path": "/CrfDataTransfer/recieveData",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+      "success": "Y",
+      "errMessage": ""
+    }
+  },
+  {
+    "path": "/CrfDataTransfer/getTransProcStat",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+      "serviceUUID": "${req['serviceUUID']}",
+      "study_oid": "${req['study_oid']}",
+      "data": []
+    }
+  }
+]

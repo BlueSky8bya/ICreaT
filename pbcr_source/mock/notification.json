@@ -1,0 +1,49 @@
+[
+  {
+    "path": "/api/getNotifications",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+      "totalCount": 0,
+      "totalPages": 0,
+      "page": 0,
+      "pageSize": 50,
+      "notifications": []
+    }
+  },
+  {
+    "path": "/api/getNotificationDetail",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+    }
+  },
+  {
+    "path": "/api/markNotificationAsRead",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+    }
+  },
+  {
+    "path": "/api/markNotificationsAsRead",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+    }
+  },
+  {
+    "path": "/api/deleteNotification",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+    }
+  },
+  {
+    "path": "/api/deleteNotifications",
+    "method": "POST",
+    "statusCode": 200,
+    "data": {
+    }
+  }
+]

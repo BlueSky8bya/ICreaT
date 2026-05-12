@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1663CF</color>
+    <color name="colorPrimaryDark">#1663CF</color>
+    <color name="colorPrimaryLight">#6495ed</color>
+    <color name="colorAccent">#6495ed</color>
+    <color name="colorAccentSecondary">#fbe555</color>
+
+    <color name="window_background">#f8f8f8</color>
+    <color name="window_background_secondary">#ecfcff</color>
+    <color name="window_background_transparent">#80F8F8F8</color>
+
+    <color name="drawer_item_icon_tint">#666666</color>
+    <color name="drawer_item_text_color">#222222</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="red_900">#B71C1C</color>
+    <color name="grey_300">#e0e0e0</color>
+
+    <color name="normal">#8ac6d1</color>
+    <color name="warning">#ffcc33</color>
+    <color name="absent">#ea5e5e</color>
+
+    <color name="text_high">#DE000000</color>
+    <color name="text_medium">#99000000</color>
+    <color name="text_disabled">#61000000</color>
+
+    <color name="grey_light">#e3e3e3</color>
+    <color name="grey">#7a7979</color>
+    <color name="grey_dark">#343A40</color>
+    <color name="blue_grey">#8393A7</color>
+    <color name="blue_grey_transparent">#808393A7</color>
+
+    <color name="logo_blue">#1663cf</color>
+    <color name="logo_bg">#ECF5FF</color>
+
+    <color name="icon_yellow">#FFCC33</color>
+    <color name="icon_blue">#6495ed</color>
+    <color name="icon_purple">#7b68ee</color>
+    <color name="icon_skyblue">#88D0DB</color>
+    <color name="icon_green">#b7e778</color>
+
+    <color name="text_orange">#FFA500</color>
+</resources>

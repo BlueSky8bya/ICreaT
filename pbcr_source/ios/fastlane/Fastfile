@@ -1,0 +1,94 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload to Firebase App Distribution"
+  lane :firebase do |values|
+    file_path = values[:file_path]
+
+    firebase_app_distribution(
+      app: "1:709324135794:ios:8174df7dd9f9bb9ceb91eb",
+      ipa_path: file_path,
+      service_credentials_file: "../key/firebase_admin_key.json",
+      release_notes_file: "../fastlane/firebase_release_notes.txt",
+      groups: "가톨릭대학교-서울성모병원, 질병관리청, 케어스퀘어",
+    )
+
+    # send_teams(
+    #   file_path: file_path,
+    #   to_firebase: true
+    # )
+  end
+
+  desc "Deploy a new version to the App Store"
+  lane :store do |values|
+    api_key_info = app_store_connect_api_key(
+      key_id: "27QJQ5B3WX",
+      issuer_id: "1ad3f7c3-f4f2-4705-a360-ca41efe561ba",
+      key_filepath: "../key/app_store_connect_api_key.p8",
+    )
+    # sync_code_signing(type: "appstore")    # see code signing guide for more information
+    build_app(
+      skip_build_archive: true,
+      archive_path: values[:archive_path],
+    )
+
+    if values[:auto_release] == "1"
+      auto_release = true
+    else 
+      auto_release = false
+    end
+
+    upload_to_app_store(
+      force: true,  # Set to true to skip verification of HTML preview
+      api_key: api_key_info,
+      precheck_include_in_app_purchases: false,
+      automatic_release: auto_release,
+      skip_screenshots: true,
+      submit_for_review: true,
+      submission_information: {
+      #   add_id_info_limits_tracking: true,
+      #   add_id_info_serves_ads: false,
+      #   add_id_info_tracks_action: true,
+      #   add_id_info_tracks_install: true,
+        add_id_info_uses_idfa: false,
+      #   content_rights_has_rights: true,
+      #   content_rights_contains_third_party_content: true,
+      #   export_compliance_platform: 'ios',
+      #   export_compliance_compliance_required: false,
+      #   export_compliance_encryption_updated: false,
+      #   export_compliance_app_type: nil,
+      #   export_compliance_uses_encryption: false,
+      #   export_compliance_is_exempt: false,
+      #   export_compliance_contains_third_party_cryptography: false,
+      #   export_compliance_contains_proprietary_cryptography: false,
+      #   export_compliance_available_on_french_store: false
+      },
+    )
+    # upload_to_testflight(
+    #   api_key: api_key_info,
+    #   skip_submission: true,  # to only upload the build
+    #   beta_app_description: "배포 테스트용입니다",
+    #   notify_external_testers: false,
+    # )
+
+    # send_teams(
+    #   file_path: values[:file_path],
+    #   to_firebase: false
+    # )
+  end
+end

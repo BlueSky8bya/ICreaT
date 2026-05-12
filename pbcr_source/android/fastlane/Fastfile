@@ -1,0 +1,66 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  desc "Upload to Firebase App Distribution"
+  lane :firebase do |values|
+    file_path = values[:file_path]
+
+    firebase_app_distribution(
+      app: "1:709324135794:android:14e7f09d70bb04f5eb91eb",
+      apk_path: file_path,
+      service_credentials_file: "../key/firebase_admin_key.json",
+      release_notes_file: "../fastlane/firebase_release_notes.txt",
+      groups: "가톨릭대학교-서울성모병원, 질병관리청, 케어스퀘어",
+    )
+  end
+
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Submit a new Beta Build to Crashlytics Beta"
+  lane :beta do
+    gradle(task: "clean assembleRelease")
+    crashlytics
+  
+    # sh "your_script.sh"
+    # You can also use other beta testing services here
+  end
+
+  desc "Deploy a new version to the Google Play"
+  lane :deploy do
+    gradle(task: "clean assembleRelease")
+    upload_to_play_store
+  end
+
+  desc "Deploy a new version to the Play Store"
+  lane :store do |values|
+    file_path = values[:file_path]
+
+    upload_to_play_store(
+      track:'production',
+      aab: file_path,
+      # changes_not_sent_for_review: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

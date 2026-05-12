@@ -1,0 +1,4 @@
+enum MeasurementInputType {
+  manual,
+  bluetooth,
+}

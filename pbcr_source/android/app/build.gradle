@@ -1,0 +1,132 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "kotlin-kapt"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+    // Google services Gradle plugin
+    id 'com.google.gms.google-services'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core-ktx:1.6.0'
+    }
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+android {
+    namespace = "kr.caresquare.pbcr"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+    android.buildFeatures.buildConfig true
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("../debug.keystore")
+        }
+        profile {
+            if (localProperties['storeFile']) {
+                storeFile file(localProperties['storeFile'])
+                keyAlias localProperties.getProperty('testKeyAlias')
+                storePassword localProperties.getProperty('storePassword')
+                keyPassword localProperties.getProperty('keyPassword')
+            }
+        }
+        release {
+            if (localProperties['storeFile']) {
+                storeFile file(localProperties['storeFile'])
+                keyAlias localProperties.getProperty('keyAlias')
+                storePassword localProperties.getProperty('storePassword')
+                keyPassword localProperties.getProperty('keyPassword')
+            }
+        }
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "kr.caresquare.pbcr"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        minSdk = 26
+        targetSdk = 35
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        debug {
+            // applicationIdSuffix '.debug'
+            versionNameSuffix '-DEBUG'
+            resValue "string", "app_name", "iCReaT DCT(개발)"
+
+            buildConfigField "String", "BUILD_VARIANT", "\"dev\""
+            minifyEnabled false
+            debuggable true
+            signingConfig signingConfigs.debug
+        }
+        profile {
+            // applicationIdSuffix '.test'
+            versionNameSuffix '-TEST'
+            resValue "string", "app_name", "iCReaT DCT(테스트)"
+
+            buildConfigField "String", "BUILD_VARIANT", "\"test\""
+            minifyEnabled true
+            debuggable true
+            signingConfig signingConfigs.profile
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            resValue "string", "app_name", "iCReaT DCT"
+
+            buildConfigField "String", "BUILD_VARIANT", "\"prod\""
+            minifyEnabled true
+            debuggable false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel "full"
+            }
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    def room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version") {
+        exclude(group: 'org.xerial')
+    }
+    implementation("androidx.room:room-ktx:$room_version") {
+        exclude(group: 'org.xerial')
+    }
+    kapt("androidx.room:room-compiler:$room_version") {
+        exclude(group: 'org.xerial')
+    }
+    implementation 'org.xerial:sqlite-jdbc:3.34.0'
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
+    implementation "androidx.lifecycle:lifecycle-service:2.5.1"
+
+    implementation "com.google.code.gson:gson:2.9.0"
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"
+}

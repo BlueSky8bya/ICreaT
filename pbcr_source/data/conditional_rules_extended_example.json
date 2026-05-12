@@ -1,0 +1,245 @@
+{
+  "form_seq": 4104,
+  "form_name": "종합 건강 설문지",
+  "conditional_rules": [
+    {
+      "rule_id": "age_range_adult_consent",
+      "rule_type": "required",
+      "trigger_item_uid": "age_input_uid",
+      "trigger_condition": {
+        "operator": "between",
+        "value": {"min": 18, "max": 65}
+      },
+      "target_item_uid": "adult_consent_uid",
+      "target_action": true,
+      "description": "나이가 18-65세 사이인 경우 성인 동의서가 필수입니다."
+    },
+    {
+      "rule_id": "weight_format_validation",
+      "rule_type": "enabled",
+      "trigger_item_uid": "weight_input_uid",
+      "trigger_condition": {
+        "operator": "digit_format",
+        "value": {"integer_digits": 3, "decimal_digits": 1}
+      },
+      "target_item_uid": "weight_confirm_uid",
+      "target_action": true,
+      "description": "체중이 000.0 형식(정수 3자리, 소수 1자리)인 경우 확인 필드가 활성화됩니다."
+    },
+    {
+      "rule_id": "comment_length_validation",
+      "rule_type": "required",
+      "trigger_item_uid": "symptom_comment_uid",
+      "trigger_condition": {
+        "operator": "length_between",
+        "value": {"min": 10, "max": 500}
+      },
+      "target_item_uid": "comment_confirm_uid",
+      "target_action": true,
+      "description": "증상 설명이 10-500자 사이인 경우 확인 필드가 필수입니다."
+    },
+    {
+      "rule_id": "height_tall_person_survey",
+      "rule_type": "enabled",
+      "trigger_item_uid": "height_input_uid",
+      "trigger_condition": {
+        "operator": "greater_than",
+        "value": "180"
+      },
+      "target_item_uid": "tall_person_survey_uid",
+      "target_action": true,
+      "description": "키가 180cm 초과인 경우 키 큰 사람 설문이 활성화됩니다."
+    },
+    {
+      "rule_id": "bmi_underweight_concern",
+      "rule_type": "visible",
+      "trigger_item_uid": "bmi_input_uid",
+      "trigger_condition": {
+        "operator": "less_than",
+        "value": "18.5"
+      },
+      "target_item_uid": "underweight_concern_uid",
+      "target_action": true,
+      "description": "BMI가 18.5 미만인 경우 저체중 우려 메시지가 표시됩니다."
+    },
+    {
+      "rule_id": "emergency_contact_min_length",
+      "rule_type": "required",
+      "trigger_item_uid": "emergency_contact_uid",
+      "trigger_condition": {
+        "operator": "min_length",
+        "value": "5"
+      },
+      "target_item_uid": "emergency_contact_confirm_uid",
+      "target_action": true,
+      "description": "비상연락처가 5자 이상인 경우 확인 필드가 필수입니다."
+    },
+    {
+      "rule_id": "medication_name_max_length",
+      "rule_type": "enabled",
+      "trigger_item_uid": "medication_name_uid",
+      "trigger_condition": {
+        "operator": "max_length",
+        "value": "100"
+      },
+      "target_item_uid": "medication_details_uid",
+      "target_action": true,
+      "description": "약물명이 100자 이하인 경우 세부사항 필드가 활성화됩니다."
+    },
+    {
+      "rule_id": "blood_pressure_systolic_range",
+      "rule_type": "required",
+      "trigger_item_uid": "systolic_bp_uid",
+      "trigger_condition": {
+        "operator": "greater_than_or_equal",
+        "value": "140"
+      },
+      "target_item_uid": "hypertension_followup_uid",
+      "target_action": true,
+      "description": "수축기 혈압이 140 이상인 경우 고혈압 추적 필드가 필수입니다."
+    },
+    {
+      "rule_id": "temperature_decimal_precision",
+      "rule_type": "enabled",
+      "trigger_item_uid": "body_temperature_uid",
+      "trigger_condition": {
+        "operator": "decimal_digits",
+        "value": "1"
+      },
+      "target_item_uid": "temperature_confirm_uid",
+      "target_action": true,
+      "description": "체온이 소수점 1자리인 경우 확인 필드가 활성화됩니다."
+    },
+    {
+      "rule_id": "exercise_frequency_range",
+      "rule_type": "visible",
+      "trigger_item_uid": "exercise_per_week_uid",
+      "trigger_condition": {
+        "operator": "less_than_or_equal",
+        "value": "2"
+      },
+      "target_item_uid": "exercise_motivation_uid",
+      "target_action": true,
+      "description": "주간 운동 횟수가 2회 이하인 경우 운동 동기부여 섹션이 표시됩니다."
+    },
+    {
+      "rule_id": "smoking_no_clear_cigarettes",
+      "rule_type": "clear_value",
+      "trigger_item_uid": "smoking_status_uid",
+      "trigger_condition": {
+        "operator": "equals",
+        "value": "no"
+      },
+      "target_item_uid": "cigarettes_per_day_uid",
+      "target_action": true,
+      "description": "흡연 여부에서 '아니오'를 선택하면 하루 흡연량 필드가 자동으로 비워집니다."
+    },
+    {
+      "rule_id": "diabetes_no_clear_medication",
+      "rule_type": "clear_value",
+      "trigger_item_uid": "has_diabetes_uid",
+      "trigger_condition": {
+        "operator": "equals",
+        "value": "false"
+      },
+      "target_item_uid": "diabetes_medication_uid",
+      "target_action": true,
+      "description": "당뇨병 여부에서 '아니오'를 선택하면 당뇨약물 필드가 자동으로 비워집니다."
+    }
+  ],
+  "data_type_examples": {
+    "Integer": {
+      "operators": ["between", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal"],
+      "examples": [
+        {
+          "operator": "between",
+          "value": {"min": 18, "max": 65},
+          "description": "18세 이상 65세 이하"
+        },
+        {
+          "operator": "greater_than",
+          "value": "100",
+          "description": "100 초과"
+        }
+      ]
+    },
+    "Float": {
+      "operators": ["between", "greater_than", "less_than", "digit_format", "integer_digits", "decimal_digits"],
+      "examples": [
+        {
+          "operator": "digit_format",
+          "value": {"integer_digits": 3, "decimal_digits": 1},
+          "description": "정수 3자리, 소수 1자리 (예: 123.4)"
+        },
+        {
+          "operator": "decimal_digits",
+          "value": "2",
+          "description": "소수점 2자리 (예: 12.34)"
+        }
+      ]
+    },
+    "String": {
+      "operators": ["min_length", "max_length", "length_between", "is_empty", "is_not_empty"],
+      "examples": [
+        {
+          "operator": "length_between",
+          "value": {"min": 10, "max": 500},
+          "description": "10자 이상 500자 이하"
+        },
+        {
+          "operator": "min_length",
+          "value": "5",
+          "description": "최소 5자"
+        }
+      ]
+    }
+  },
+  "usage_guide": {
+    "basic_validation": "A문항의 값이 특정 조건을 만족하면 B문항에 영향을 줍니다.",
+    "range_validation": "숫자 범위를 검증하여 조건부 로직을 적용합니다.",
+    "length_validation": "문자열 길이를 검증하여 조건부 로직을 적용합니다.",
+    "format_validation": "Float 타입의 자릿수를 검증하여 조건부 로직을 적용합니다."
+  },
+  "implementation_examples": {
+    "dart_code": [
+      "// 범위 검증 예시",
+      "final rules = ConditionalRuleData.getConditionalRules(4104);",
+      "final manager = ConditionalRuleManager();",
+      "manager.initializeRules(rules);",
+      "",
+      "// 나이 입력 시 조건부 규칙 평가",
+      "manager.evaluateRules('age_input_uid', '25');",
+      "bool isAdultConsentRequired = manager.isConditionalRequired('adult_consent_uid');"
+    ],
+    "json_templates": [
+      {
+        "name": "범위 검증 템플릿",
+        "template": {
+          "rule_id": "your_rule_id",
+          "rule_type": "required",
+          "trigger_item_uid": "trigger_item_uid",
+          "trigger_condition": {
+            "operator": "between",
+            "value": {"min": 0, "max": 100}
+          },
+          "target_item_uid": "target_item_uid",
+          "target_action": true
+        }
+      },
+      {
+        "name": "길이 검증 템플릿",
+        "template": {
+          "rule_id": "your_rule_id",
+          "rule_type": "enabled",
+          "trigger_item_uid": "trigger_item_uid",
+          "trigger_condition": {
+            "operator": "length_between",
+            "value": {"min": 5, "max": 100}
+          },
+          "target_item_uid": "target_item_uid",
+          "target_action": true
+        }
+      }
+    ]
+  }
+} 

@@ -1,0 +1,94 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Local configuration
+local.properties
+*.local
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+**/logs/
+server.log
+
+# Android / Gradle
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.aab
+*.ipa
+
+# Java / Kotlin
+*.class
+out/
+bin/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock.tmp
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+*.sqlite3
+db.sqlite3
+nohup.out
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+
+# Signing keys / service credentials
+*.jks
+*.keystore
+*.p12
+*.pem
+*.mobileprovision
+pbcr_source/key/
+**/google-services.json
+**/GoogleService-Info.plist
+firebase_admin_key.json
+android_fastlane_key.json
+
+# Generated archives and debug symbols
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.dSYM.zip
+*.zip
+*.xlsx
+*.xls
+
+# Keep the curated sample data archive for Bethesda integration tests.
+!Sensor_monitor/sensor_data.zip
