@@ -217,11 +217,9 @@ class AcceptService : Service() {
             val sendedDir = java.io.File(sensorDir, "sended")
             if (!sendedDir.exists()) sendedDir.mkdirs()
 
+            val chunkFileRegex = Regex("^${Regex.escape(sensor.value)}_\\d{6}_\\d{6}\\.csv$")
             val allFiles = sensorDir.listFiles()?.filter { file ->
-                file.name.endsWith(".csv") &&
-                        file.name.contains(sensor.value) &&
-                        !file.name.contains("merged") &&
-                        file.name.contains(Regex("\\d{6}_\\d+"))
+                file.isFile && chunkFileRegex.matches(file.name)
             } ?: continue
 
             if (allFiles.isNotEmpty()) {
@@ -245,28 +243,27 @@ class AcceptService : Service() {
                         }
                     }
 
-                    val destFile = java.io.File(sendedDir, mergedFileName)
+                    CsvController.writeLog("[MERGE] ${sensor.value}: 병합 완료")
 
-                    if (mergedFile.renameTo(destFile)) {
-                        CsvController.writeLog("[MERGE] ${sensor.value}: 병합 완료 및 sended 이동")
+                    val epochTime = System.currentTimeMillis() / 1000L
+                    val userID = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._uID
+                    val battery = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._battery
 
-                        val epochTime = System.currentTimeMillis() / 1000L
-                        val userID = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._uID
-                        val battery = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._battery
+                    CsvController.writeLog("[UPLOAD] 전송 시도: $mergedFileName (UID: $userID, BAT: $battery)")
 
-                        CsvController.writeLog("[UPLOAD] 전송 시도: $mergedFileName (UID: $userID, BAT: $battery)")
-
-                        com.gachon_HCI_Lab.user_mobile.common.ServerConnection.postFile(destFile, userID, battery, epochTime.toString()) { isSuccess ->
-                            if (isSuccess) {
-                                CsvController.writeLog("[UPLOAD] 전송 성공: $mergedFileName (조각 파일 ${sortedFiles.size}개 삭제)")
+                    com.gachon_HCI_Lab.user_mobile.common.ServerConnection.postFile(mergedFile, userID, battery, epochTime.toString()) { isSuccess ->
+                        if (isSuccess) {
+                            val destFile = java.io.File(sendedDir, mergedFileName)
+                            if (mergedFile.renameTo(destFile)) {
+                                CsvController.writeLog("[UPLOAD] 전송 성공 및 sended 이동: $mergedFileName (조각 파일 ${sortedFiles.size}개 삭제)")
                                 sortedFiles.forEach { it.delete() }
                             } else {
-                                CsvController.writeLog("[UPLOAD] 전송 실패: $mergedFileName (조각 파일 보존)")
+                                CsvController.writeLog("[UPLOAD] 전송 성공, sended 이동 실패: $mergedFileName (조각 파일 보존)")
                             }
+                        } else {
+                            CsvController.writeLog("[UPLOAD] 전송 실패: $mergedFileName (병합 파일 삭제, 조각 파일 보존)")
+                            if (mergedFile.exists()) mergedFile.delete()
                         }
-                    } else {
-                        CsvController.writeLog("[MERGE] 이동 실패: $mergedFileName (병합본 삭제)")
-                        if (mergedFile.exists()) mergedFile.delete()
                     }
 
                     kotlinx.coroutines.delay(300)

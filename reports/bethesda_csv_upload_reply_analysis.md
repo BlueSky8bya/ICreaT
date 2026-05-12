@@ -12,7 +12,7 @@
 | 필드명 | 타입 | 설명 |
 |---|---|---|
 | `csvfile` | file | 센서별 30분 병합 CSV 파일 |
-| `battery` | string-form integer | 워치 배터리 잔량. multipart 텍스트 필드로 전송되지만 값은 정수 퍼센트 |
+| `battery` | form field | 워치 배터리 잔량. 현재 앱에서는 multipart 일반 form field로 전달하며, 값은 워치에서 받은 배터리 숫자값을 그대로 사용 |
 | `timestamp` | string | 전송 시각, Unix epoch 초 단위 |
 | `studyId` | string | 베데스다 Study ID |
 | `subjectId` | string | 베데스다 Subject ID |
@@ -107,6 +107,8 @@ tcSubjectId.text = qrScanResult.subjectId;
 2. 운영 친화 구현: `pbcr_source`처럼 QR 스캔 기능을 추가해 자동 입력
 
 베데스다 담당자분이 해당 기능을 언급했으므로 장기적으로는 2번이 더 적합합니다. 다만 현재 `Sensor_monitor`에는 QR/바코드 라이브러리가 없으므로 의존성 추가와 카메라 권한 처리가 필요합니다.
+
+현 시점에서는 QR 스캔 기능까지 바로 구현하기보다, 베데스다 측에 테스트용으로 사용할 수 있는 남는 `studyId`, `subjectId` 한 쌍을 요청하고 앱에 임시 하드코딩해서 엔드포인트 연동을 먼저 검증하는 것이 현실적입니다. 이후 서버 전송이 안정화되면 QR 스캔 또는 수동 입력 저장 구조를 추가하는 순서가 좋습니다.
 
 ## 4. 현재 코드 기준 수정 포인트
 
@@ -238,7 +240,7 @@ def postCurrentData(request):
 |---|---|---|
 | `csvfile` | file | 워치에서 수집된 CSV 파일 |
 | `userID` | string | 기존 authCode |
-| `battery` | string-form integer | 배터리 잔량. multipart 텍스트 필드로 전송되지만 값은 정수 퍼센트 |
+| `battery` | form field | 배터리 잔량. 현재 앱에서는 multipart 일반 form field로 전달하며, 값은 워치에서 받은 배터리 숫자값을 그대로 사용 |
 | `timestamp` | string | Unix epoch 초 단위 |
 
 베데스다 전환 규격 후보:
@@ -248,7 +250,7 @@ def postCurrentData(request):
 | `csvfile` | file | 워치에서 수집된 CSV 파일 |
 | `studyId` | string | 베데스다 Study ID |
 | `subjectId` | string | 베데스다 Subject ID |
-| `battery` | string-form integer | 배터리 잔량. multipart 텍스트 필드로 전송되지만 값은 정수 퍼센트 |
+| `battery` | form field | 배터리 잔량. 현재 앱에서는 multipart 일반 form field로 전달하며, 값은 워치에서 받은 배터리 숫자값을 그대로 사용 |
 | `timestamp` | string | Unix epoch 초 단위 |
 
 ### 5.4 샘플 센서 데이터
@@ -314,15 +316,21 @@ time,value
 다만 구현 전 아래 5개 필드명으로 구성하면 되는지 한 번만 확인 부탁드립니다.
 
 1. csvfile: CSV 파일
-2. battery: 워치 배터리 잔량, 정수 퍼센트 값을 문자열 형태로 전송
+2. battery: 워치 배터리 잔량. 현재 앱에서는 multipart 일반 form field로 전달하며, 값은 워치에서 받은 배터리 숫자값을 그대로 사용
 3. timestamp: 전송 시각, Unix epoch 초 단위 문자열
 4. studyId: Study ID
 5. subjectId: Subject ID
 
 그리고 신규 엔드포인트 URL과 성공/실패 응답 코드 및 응답 body 형식도 확정되면 공유 부탁드립니다.
 
+또한 Study ID / Subject ID는 최종적으로는 말씀 주신 QR 코드 스캔 방식으로 앱에 매칭하는 구조가 맞다고 이해했습니다.
+다만 현재 단계에서는 CSV 업로드 엔드포인트 연동을 먼저 검증해야 해서, QR 스캔 기능까지 바로 구현하기는 어려울 것 같습니다.
+추후 QR 스캔 기능을 추가하기 전까지 임시로 앱에 하드코딩해서 사용할 수 있는 테스트용 Study ID와 Subject ID 값을 하나 제공해주실 수 있을까요?
+실운영 대상자가 아닌 테스트용 또는 사용하지 않는 값이면 됩니다.
+
 기존 강원대 서버 전송 규격과 Sensor_monitor의 OkHttp multipart Kotlin 소스는 정리해서 공유드리겠습니다.
 샘플 센서 데이터는 Sensor_monitor의 sensor_data.zip으로 준비되어 있어 함께 공유드리겠습니다. 해당 압축 파일에는 센서별 CSV와 실제 전송 대상인 sended 폴더의 30분 병합 CSV가 포함되어 있습니다.
+현재 앱은 센서 데이터를 약 5분 단위 CSV 조각으로 저장하고, 매시 00분/30분에 센서별 조각 파일을 30분 단위 CSV로 병합한 뒤 서버 전송을 시도합니다. 서버가 HTTP 200 성공 응답을 주면 병합 CSV를 sended 폴더로 이동하고 병합에 사용된 원본 조각 CSV를 삭제합니다. 실패 응답이나 네트워크 오류가 발생하면 실패한 병합 CSV는 삭제하고 원본 조각 CSV는 보존하여, 다음 전송 시점에 다시 병합 후 전송을 재시도할 수 있도록 합니다.
 
 Q4에서 말씀드린 적재 확인은 별도 로그 조회 API 구현을 요청드린 의미는 아니었습니다.
 초기 연동 테스트 시 저희가 전송한 CSV가 베데스다 서버 측에 정상 적재되었는지만 담당자분께서 확인해주시면 충분합니다.
@@ -333,11 +341,12 @@ Q4에서 말씀드린 적재 확인은 별도 로그 조회 API 구현을 요청
 ## 7. 우선순위
 
 1. 베데스다에 5개 필드명과 신규 URL 확정 요청
-2. `Sensor_monitor`에 Study ID / Subject ID 저장 구조 추가
-3. 가능하면 QR 스캔 기능 추가, 빠르게 가야 하면 수동 입력으로 1차 구현
-4. multipart 업로드 필드 수정
-5. curl 단독 검증
-6. 30분 주기 실제 앱 종단간 테스트
+2. 테스트용 Study ID / Subject ID 제공 요청
+3. `Sensor_monitor`에 테스트용 Study ID / Subject ID 임시 하드코딩
+4. 추후 QR 스캔 또는 수동 입력 저장 구조 추가
+5. multipart 업로드 필드 수정
+6. curl 단독 검증
+7. 30분 주기 실제 앱 종단간 테스트
 
 ## 8. 주의 사항
 
