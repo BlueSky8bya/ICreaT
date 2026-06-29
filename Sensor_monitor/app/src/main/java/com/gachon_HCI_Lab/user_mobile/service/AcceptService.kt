@@ -201,6 +201,13 @@ class AcceptService : Service() {
         val downloadBasePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
         CsvController.writeLog("[MERGE] sendCSV() 진입: 30분 단위 병합 및 전송")
 
+        // [2026-06-29] 이유: 워치 실측 배터리 수신 전엔 _battery 기본 sentinel(빈값)이라, 백로그를 가짜 100으로 올릴 위험.
+        // 목적: 실측 배터리 받기 전엔 병합/전송 보류. 조각 파일은 디스크에 보존되어 워치 연결 후 다음 주기에 실측값으로 전송됨.
+        if (!com.gachon_HCI_Lab.user_mobile.common.DeviceInfo.hasBattery()) {
+            CsvController.writeLog("[UPLOAD] 보류: 워치 배터리 미수신 — 실측값 수신 전까지 병합/전송 안 함 (조각 파일 보존)")
+            return
+        }
+
         val calendar = java.util.Calendar.getInstance()
         val minute = calendar.get(java.util.Calendar.MINUTE)
         val fixedMinute = if (minute >= 30) "30" else "00"

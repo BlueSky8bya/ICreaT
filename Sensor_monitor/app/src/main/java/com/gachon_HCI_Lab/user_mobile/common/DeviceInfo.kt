@@ -17,7 +17,8 @@ class DeviceInfo private constructor() {
         var _dID : String = ""
         var _studyId : String = TEST_STUDY_ID
         var _subjectId : String = TEST_SUBJECT_ID
-        var _battery : String = "100"
+        // [2026-06-29] 이유: 기본 "100"은 placeholder라 워치 미연결 시 실제와 무관한 100이 서버로 전송됨. | 목적: 빈값 sentinel로 두고, 실측 수신 전엔 업로드 보류(hasBattery 게이트). 가짜 배터리 전송 차단.
+        var _battery : String = ""
 
         /**
          * 디바이스 정보를 초기화하는 함수
@@ -29,7 +30,7 @@ class DeviceInfo private constructor() {
             deviceID: String = "",
             studyId: String = TEST_STUDY_ID,
             subjectId: String = TEST_SUBJECT_ID,
-            battery: String = "100"
+            battery: String = ""
         ) {
             _dID = deviceID
             _studyId = studyId
@@ -55,5 +56,8 @@ class DeviceInfo private constructor() {
         fun setBattery(battery: String) {
             _battery = battery
         }
+
+        // [2026-06-29] 워치로부터 실측 배터리를 한 번이라도 받았는지. false면 업로드 보류(가짜 100 방지).
+        fun hasBattery(): Boolean = _battery.isNotEmpty()
     }
 }
