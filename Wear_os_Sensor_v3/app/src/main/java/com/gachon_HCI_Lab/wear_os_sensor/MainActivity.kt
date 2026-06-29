@@ -28,14 +28,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler())
 
-        // [2026-06-30] 이유: 기존엔 센서/BT 권한을 따로 묻고, 일시중지·배터리 설정은 앱 목록을 수동으로 들어가야 했음.
-        // 목적: 첫 실행에 런타임 권한을 한 번에 요청. 시스템 설정(앱 일시중지 해제·배터리 최적화 제외)은 권한 처리 후 유도 인텐트로 안내(자동 토글은 OS상 불가).
-        val pendingPermissions = requestAllPermissions()
-        if (pendingPermissions == 0) {
-            guideSystemSettingsOnce() // 요청할 권한이 없으면(이미 허용) 바로 시스템 설정 안내
+        // [2026-06-30] 이유: 기존엔 ConnectFragment를 서비스가 foreground 실행 중일 때만 추가해, 첫 실행 시 버튼 화면이 안 뜨고 터치도 안 됐음.
+        // 목적: 콜드 스타트에 항상 ConnectFragment를 먼저 표시(첫 프레임을 그려 스플래시가 닫히도록). ConnectFragment가 서비스 상태를 보고 Start/Stop을 스스로 결정함.
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, ConnectFragment())
+                .commit()
         }
 
-        // 헬스 클라이언트 초기화(걸음 데이터). 실패해도 앱 진입은 막지 않음.
+        // 헬스 클라이언트 초기화(걸음 데이터). 어떤 실패든 앱 진입을 막지 않도록 모든 예외를 삼킨다.
         try {
             val healthDataClient = HealthDataService.getClient(this)
             StepsReaderUtil.addContext(this)
@@ -49,16 +50,15 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
-        } catch (e: IllegalStateException) {
+        } catch (e: Exception) {
             Log.e("MainActivity", "Health client init failed: ${e.message}")
         }
 
-        // [2026-06-30] 이유: 기존엔 ConnectFragment를 서비스가 foreground 실행 중일 때만 추가해, 첫 실행 시 버튼 화면이 안 뜨고 터치도 안 됐음.
-        // 목적: 콜드 스타트에 항상 ConnectFragment를 표시. ConnectFragment가 서비스 실행 상태를 보고 Start/Stop을 스스로 결정함.
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, ConnectFragment())
-                .commit()
+        // [2026-06-30] 이유: 첫 실행에 권한을 따로 묻고 일시중지·배터리 설정은 앱 목록을 수동으로 들어가야 했음.
+        // 목적: 런타임 권한을 한 번에 요청. 시스템 설정 유도(앱 일시중지 해제·배터리 최적화 제외)는 onCreate 동기 경로에서 startActivity 하면 첫 프레임 전에 화면이 튀어 스플래시가 멈추므로, 첫 프레임이 그려진 뒤(decorView.post) 또는 권한 콜백에서 띄운다.
+        val pendingPermissions = requestAllPermissions()
+        if (pendingPermissions == 0) {
+            window.decorView.post { guideSystemSettingsOnce() }
         }
     }
 
