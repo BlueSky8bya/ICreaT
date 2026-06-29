@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-06-30 — 로그인 화면 이메일 입력칸 제거 (무인증 진입)
+- 이유: DCT 앱은 베데스다 무인증 정책으로 로그인 화면이 없어야 함. Phase 0 진입은 하드코딩 studyId/subjectId(C250005/121-001)로 "로그인된 셈" 치고 진행하는데, 레이아웃에 옛 "마음수첩 앱 이메일" 입력칸(`tilId`/`id`)이 잔재로 남아 있었음(코드에선 미사용).
+- 목적: 이메일 TextInputLayout 제거, 버튼 텍스트 "로그인"→"시작"으로 변경(인증 아님). subtitle 제약을 loginBtn으로 재연결. 정식 로그인은 추후 QR 스캔으로 studyId/subjectId 주입 예정.
+- 파일: `app/src/main/res/layout/activity_login.xml`
+- 비고: 코드(LoginActivity)는 이미 이메일칸 미참조 — UI만 정리. 진입 흐름(loginBtn→enterSensor→하드코딩 ID)은 불변.
+
 ## 2026-06-30 — 모바일 셋업 자동화 스크립트(setup_phone.ps1) 추가
 - 이유: 폰마다 설치 후 위치·BT·알림·저장소 권한 + 모든 파일 접근 + 앱 일시정지 해제 + 배터리 최적화 제외를 설정 화면에서 수동으로 하기 번거롭고 누락 위험. 워치용 `setup_watch.ps1`의 모바일 짝.
 - 목적: ADB로 설치~설정을 한 번에. ① `gradlew installDebug` 설치 ② `pm grant`로 런타임 권한(위치/BT/알림/저장소) ③ `appops MANAGE_EXTERNAL_STORAGE allow`(센서 CSV Downloads 접근) ④ `appops AUTO_REVOKE...ignore`(일시정지 해제) ⑤ `deviceidle whitelist`(배터리 최적화 제외) ⑥ 검증 출력. 유선 1대면 인자 없이 실행.

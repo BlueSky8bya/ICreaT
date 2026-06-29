@@ -42,49 +42,17 @@
         android:textSize="15sp"
         android:fontFamily="sans-serif"
         android:letterSpacing="0.01"
-        app:layout_constraintBottom_toTopOf="@id/tilId"
+        app:layout_constraintBottom_toTopOf="@id/loginBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilId"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="32dp"
-        android:layout_marginBottom="16dp"
-        android:hint="마음수첩 앱 이메일"
-        app:boxCornerRadiusTopStart="16dp"
-        app:boxCornerRadiusTopEnd="16dp"
-        app:boxCornerRadiusBottomStart="16dp"
-        app:boxCornerRadiusBottomEnd="16dp"
-        app:boxStrokeColor="@color/selector_stroke"
-        app:boxStrokeWidth="1.5dp"
-        app:boxStrokeWidthFocused="2dp"
-        app:boxBackgroundColor="@color/bg_card"
-        app:hintTextColor="@color/text_secondary"
-        app:layout_constraintBottom_toTopOf="@id/loginBtn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/id"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textEmailAddress"
-            android:paddingVertical="18dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_tertiary"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif"/>
-    </com.google.android.material.textfield.TextInputLayout>
-
+    <!-- [2026-06-30] DCT 앱은 무인증 진입(베데스다 정책). 이메일 입력칸 제거 — 하드코딩 studyId/subjectId로 진입. 정식 로그인은 추후 QR 스캔으로 ID 주입. -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/loginBtn"
         android:layout_width="0dp"
         android:layout_height="60dp"
         android:layout_marginHorizontal="32dp"
-        android:text="로그인"
+        android:text="시작"
         android:textSize="17sp"
         android:textColor="#FFFFFF"
         app:cornerRadius="16dp"
