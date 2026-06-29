@@ -46,6 +46,44 @@ object CsvController {
         }
     }
 
+    // [2026-06-29] 워치 배터리 로컬 타임라인 기록용 상태.
+    private var lastLoggedBattery: Int? = null
+    private var lastBatteryLogTime: Long = 0L
+    private const val BATTERY_HEARTBEAT_MS = 10 * 60 * 1000L // 값 정체 시에도 10분마다 1줄
+
+    /**
+     * [2026-06-29] 워치 배터리를 전용 CSV에 고해상도로 기록한다.
+     * 이유: 서버 전송은 30분 단위라 텀이 길고, 디버그 로그에 묻혀 가독성이 낮음.
+     * 목적: Downloads/sensor_data/battery/watch_battery_YYMMDD.csv 에 timestamp,battery 타임라인 적재.
+     * 효율: 값이 바뀔 때만(또는 10분 정체 시 1줄) 기록 → 파일 작고 읽기 쉬움.
+     */
+    fun logBattery(battery: Int) {
+        if (battery < 0 || battery > 100) return // 비정상값(scale=-1 등) 제외
+        val now = System.currentTimeMillis()
+        val changed = battery != lastLoggedBattery
+        val heartbeat = now - lastBatteryLogTime >= BATTERY_HEARTBEAT_MS
+        if (!changed && !heartbeat) return
+        try {
+            val dir = File(getDownloadPath(), "sensor_data/battery")
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.e(TAG, "battery dir creation failed")
+                return
+            }
+            val dateStr = SimpleDateFormat("yyMMdd", Locale.getDefault()).format(Date())
+            val file = File(dir, "watch_battery_${dateStr}.csv")
+            val isNew = !file.exists()
+            val ts = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            FileWriter(file, true).buffered().use { writer ->
+                if (isNew) writer.appendLine("timestamp,battery")
+                writer.appendLine("$ts,$battery")
+            }
+            lastLoggedBattery = battery
+            lastBatteryLogTime = now
+        } catch (e: Exception) {
+            Log.e(TAG, "battery log write failed: ${e.message}", e)
+        }
+    }
+
     fun getDownloadPath(): File {
         return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     }

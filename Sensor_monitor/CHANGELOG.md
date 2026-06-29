@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-06-29 — 워치 배터리 로컬 타임라인 CSV + 비정상값 가드
+- 이유: 배터리는 매 워치 패킷마다 도착하나, 로컬엔 `app_debug_log_*.txt`에 업로드 시점(30분 단위)에만 묻혀 나와 가독성·해상도 낮음. scale=-1 등 garbage 값 유입 가능성도 있었음.
+- 목적: (1) 전용 `Downloads/sensor_data/battery/watch_battery_YYMMDD.csv`(`timestamp,battery`)에 값 변할 때(또는 10분 정체 시 1줄) 기록 — 효율적·가독성. (2) 음수/100초과 비정상값은 무시해 서버·로그 오염 차단.
+- 파일: `common/CsvController.kt`(`logBattery()` + 상태 변수), `service/AcceptThread.kt`(`saveBatteryDataFrom` 가드+훅)
+- 비고: dedup(값 변화 기준)으로 파일 작게 유지. 비정상값은 `setBattery` 건너뜀 → `hasBattery` false 유지로 업로드 보류와 정합. 서버 전송 로직은 불변(로컬 기록은 부가).
+
 ## 2026-06-29 — 배터리: 실측 수신 전 업로드 보류 (가짜 100 차단)
 - 이유: `DeviceInfo._battery` 기본값 `"100"`은 placeholder. 업로드는 `mergeTimer`(1분 주기)가 수신과 독립으로 발사하므로, 앱 재시작 후 워치 재연결 전에 디스크 백로그 CSV가 실제 배터리와 무관한 `100`으로 전송될 수 있었음.
 - 목적: 기본값을 빈 sentinel(`""`)로 바꾸고 `hasBattery()` 게이트 추가. `sendCSV()` 진입 시 실측 배터리 미수신이면 병합·전송 보류(조각 파일은 디스크 보존 → 워치 연결 후 실측값으로 전송). persistence 없이 "연결 당시 워치 배터리만 전송" 보장.
