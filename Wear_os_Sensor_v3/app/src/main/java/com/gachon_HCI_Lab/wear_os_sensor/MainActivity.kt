@@ -1,17 +1,18 @@
 package com.gachon_HCI_Lab.wear_os_sensor
 
 import android.Manifest
-import android.app.ActivityManager
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
 import com.example.wear_os_sensor_v2.R
 import com.gachon_HCI_Lab.wear_os_sensor.util.step.Permissions
 import com.gachon_HCI_Lab.wear_os_sensor.util.step.StepsReader
@@ -19,62 +20,68 @@ import com.gachon_HCI_Lab.wear_os_sensor.util.step.StepsReaderUtil
 import com.google.android.libraries.healthdata.HealthDataService
 
 class MainActivity : AppCompatActivity() {
-    private val SENSORS_PERMISSION_REQUEST_CODE = 1001
-    private val BLUETOOTH_PERMISSION_REQUEST_CODE = 1002
-    private val fragmentManager: FragmentManager = supportFragmentManager
-    private val fragmentTransaction: FragmentTransaction = fragmentManager.beginTransaction()
+    private val ALL_PERMISSIONS_REQUEST_CODE = 1100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler())
-        checkPermission()
-        checkBluetoothPermission()
+
+        // [2026-06-30] 이유: 기존엔 센서/BT 권한을 따로 묻고, 일시중지·배터리 설정은 앱 목록을 수동으로 들어가야 했음.
+        // 목적: 첫 실행에 런타임 권한을 한 번에 요청. 시스템 설정(앱 일시중지 해제·배터리 최적화 제외)은 권한 처리 후 유도 인텐트로 안내(자동 토글은 OS상 불가).
+        val pendingPermissions = requestAllPermissions()
+        if (pendingPermissions == 0) {
+            guideSystemSettingsOnce() // 요청할 권한이 없으면(이미 허용) 바로 시스템 설정 안내
+        }
+
+        // 헬스 클라이언트 초기화(걸음 데이터). 실패해도 앱 진입은 막지 않음.
         try {
             val healthDataClient = HealthDataService.getClient(this)
             StepsReaderUtil.addContext(this)
             StepsReader.addHealthDataClient(healthDataClient)
             Permissions.addHealthDataClietn(healthDataClient)
             StepsReaderUtil.readStepsWithPermissionsCheck()
-            if (isLocationServiceRunning()) {
-                // 초기 프래그먼트를 추가합니다.
-                val connectFragment = ConnectFragment()
-                fragmentTransaction.replace(R.id.fragment_container, connectFragment)
-                // 트랜잭션을 커밋합니다.
-                fragmentTransaction.commit()
-            }
-
             if (!HealthDataService.isHealthDataApiSupported()) {
                 Toast.makeText(
                     this,
-                    "Health Platform not available, make sure you're on Samsung device running Android"
-                            + " Watch 4 and above",
+                    "Health Platform not available, make sure you're on Samsung device running Android Watch 4 and above",
                     Toast.LENGTH_LONG
-                )
-                    .show();
-                finish();
+                ).show()
             }
         } catch (e: IllegalStateException) {
-            val connectFragment = ConnectFragment()
-            fragmentTransaction.replace(R.id.fragment_container, connectFragment)
-            fragmentTransaction.replace(R.id.fragment_container, ExceptFragment()).commit()
+            Log.e("MainActivity", "Health client init failed: ${e.message}")
+        }
+
+        // [2026-06-30] 이유: 기존엔 ConnectFragment를 서비스가 foreground 실행 중일 때만 추가해, 첫 실행 시 버튼 화면이 안 뜨고 터치도 안 됐음.
+        // 목적: 콜드 스타트에 항상 ConnectFragment를 표시. ConnectFragment가 서비스 실행 상태를 보고 Start/Stop을 스스로 결정함.
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, ConnectFragment())
+                .commit()
         }
     }
 
-    private fun isLocationServiceRunning(): Boolean {
-        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-        if (activityManager != null) {
-            for (service in activityManager.getRunningServices(Int.MAX_VALUE)) {
-                if (SensorService::class.java.name == service.service.className) {
-                    if (service.foreground) {
-                        return true
-                    }
-                }
-            }
-            return false
+    /**
+     * [2026-06-30] 런타임 권한을 한 번에 묶어 요청한다. 반환값 = 이번에 요청한 권한 수(0이면 모두 허용 상태).
+     */
+    private fun requestAllPermissions(): Int {
+        val needed = mutableListOf(
+            Manifest.permission.BODY_SENSORS,
+            Manifest.permission.ACTIVITY_RECOGNITION,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        return false
+        val toRequest = needed.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (toRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), ALL_PERMISSIONS_REQUEST_CODE)
+        }
+        return toRequest.size
     }
 
     override fun onRequestPermissionsResult(
@@ -83,56 +90,41 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            SENSORS_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // 권한이 허용된 경우 실행할 작업들을 여기에 추가합니다.
-                    // 예: 센서 사용 시작 등
-                } else {
-                    // 권한이 거부된 경우 처리할 작업들을 여기에 추가합니다.
-                    // 안드로이드는 2번 이상 거부되었을 경우 재요청을 할 수 없다.
-                    checkPermission()
-                }
-            }
-            BLUETOOTH_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Bluetooth 권한이 허용된 경우 실행할 작업들
-                } else {
-                    Toast.makeText(this, "Bluetooth 권한이 필요합니다.", Toast.LENGTH_SHORT).show()
-                }
-            }
+        if (requestCode == ALL_PERMISSIONS_REQUEST_CODE) {
+            // 권한 처리 끝난 뒤에 시스템 설정 안내를 띄워야 화면이 겹치지 않음.
+            guideSystemSettingsOnce()
         }
     }
 
-    private fun checkPermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BODY_SENSORS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // 권한이 거부된 경우 권한 확인 다이얼로그를 다시 표시합니다.
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.BODY_SENSORS,
-                    Manifest.permission.ACTIVITY_RECOGNITION
-                ),
-                SENSORS_PERMISSION_REQUEST_CODE
-            )
-        }
-    }
+    /**
+     * [2026-06-30] 시스템 설정 유도(자동 토글은 OS상 불가, 안내 인텐트만). 1회만 실행.
+     * - 배터리 최적화 제외: 백그라운드에서 앱이 죽지 않도록.
+     * - 미사용 시 앱 일시중지(자동 권한 회수) 해제: 장기 측정 중 권한이 회수되지 않도록.
+     * 삼성 헬스 플랫폼 [Dev mode]는 삼성 시스템 토글이라 API가 없어 수동으로 남는다.
+     */
+    private fun guideSystemSettingsOnce() {
+        val prefs = getSharedPreferences("wear_setup", MODE_PRIVATE)
+        if (prefs.getBoolean("system_guide_shown", false)) return
+        prefs.edit().putBoolean("system_guide_shown", true).apply()
 
-    private fun checkBluetoothPermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                BLUETOOTH_PERMISSION_REQUEST_CODE
-            )
+        // 미사용 시 앱 일시중지(자동 권한 회수) 해제 안내 (Android 11+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                startActivity(Intent(Intent.ACTION_AUTO_REVOKE_PERMISSIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                })
+            } catch (e: Exception) {
+                Log.w("MainActivity", "auto-revoke intent failed: ${e.message}")
+            }
+        }
+
+        // 배터리 최적화 제외 요청
+        try {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            })
+        } catch (e: Exception) {
+            Log.w("MainActivity", "battery optimization intent failed: ${e.message}")
         }
     }
 
@@ -140,9 +132,6 @@ class MainActivity : AppCompatActivity() {
         override fun uncaughtException(p0: Thread?, p1: Throwable?) {
             Log.d("Exception", "비정상 종료")
             p1?.printStackTrace()
-
-//            android.os.Process.killProcess(android.os.Process.myPid())
-//            exitProcess(10)
         }
     }
 }
