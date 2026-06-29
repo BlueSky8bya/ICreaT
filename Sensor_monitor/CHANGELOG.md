@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-06-30 — 모바일 셋업 자동화 스크립트(setup_phone.ps1) 추가
+- 이유: 폰마다 설치 후 위치·BT·알림·저장소 권한 + 모든 파일 접근 + 앱 일시정지 해제 + 배터리 최적화 제외를 설정 화면에서 수동으로 하기 번거롭고 누락 위험. 워치용 `setup_watch.ps1`의 모바일 짝.
+- 목적: ADB로 설치~설정을 한 번에. ① `gradlew installDebug` 설치 ② `pm grant`로 런타임 권한(위치/BT/알림/저장소) ③ `appops MANAGE_EXTERNAL_STORAGE allow`(센서 CSV Downloads 접근) ④ `appops AUTO_REVOKE...ignore`(일시정지 해제) ⑤ `deviceidle whitelist`(배터리 최적화 제외) ⑥ 검증 출력. 유선 1대면 인자 없이 실행.
+- 파일: `setup_phone.ps1`
+- 비고: pkg = `com.gachon_HCI_Lab.user_mobile.dct`(.dct 접미사 → 기존 Sensor Monitor와 동시 설치). 저장소 권한은 OS 버전상 미지원이면 실패 무시(MANAGE_EXTERNAL_STORAGE가 핵심). 실기기 미검증 — 유선 연결 상태에서 1회 동작 확인 필요.
+
 ## 2026-06-29 — 워치 배터리 로컬 타임라인 CSV + 비정상값 가드
 - 이유: 배터리는 매 워치 패킷마다 도착하나, 로컬엔 `app_debug_log_*.txt`에 업로드 시점(30분 단위)에만 묻혀 나와 가독성·해상도 낮음. scale=-1 등 garbage 값 유입 가능성도 있었음.
 - 목적: (1) 전용 `Downloads/sensor_data/battery/watch_battery_YYMMDD.csv`(`timestamp,battery`)에 값 변할 때(또는 10분 정체 시 1줄) 기록 — 효율적·가독성. (2) 음수/100초과 비정상값은 무시해 서버·로그 오염 차단.
