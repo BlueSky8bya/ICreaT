@@ -25,6 +25,9 @@ class ConnectFragment : Fragment() {
     private lateinit var binding: FragmentConnectBinding
     private lateinit var dataSender: BluetoothConnect
 
+    // [2026-06-30] MainActivity와 동일 태그로 startup 로그를 묶어 logcat 한 필터로 추적.
+    private val TAG = "WearStartup"
+
     // Fragment에서 LocalBroadcastManager를 사용하여 종료 메시지를 수신하고 UI를 업데이트.
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -48,13 +51,17 @@ class ConnectFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // [2026-06-30] startup 추적 로그. MainActivity와 동일 태그("WearStartup")로 묶어 logcat 한 필터로 진입 흐름 확인.
+        Log.i(TAG, "onCreateView: enter")
         binding = FragmentConnectBinding.inflate(inflater, container, false)
         val fragmentManager = requireActivity().supportFragmentManager
         val mainFragment = MainFragment()
         val view = binding.root
 
         dataSender = BluetoothConnect
-        if (!isLocationServiceRunning()) {
+        val serviceRunning = isLocationServiceRunning()
+        Log.i(TAG, "onCreateView: serviceRunning=$serviceRunning")
+        if (!serviceRunning) {
             dataSender.constructor(requireContext())
             searchBluetoothDevice()
         } else {
@@ -109,6 +116,7 @@ class ConnectFragment : Fragment() {
 
     private fun searchBluetoothDevice() {
         val device = dataSender.searchDevice()
+        Log.i(TAG, "searchBluetoothDevice: result=$device")
         if (device != "error" && device != null) {
             Toast.makeText(requireActivity(), "Connect $device", Toast.LENGTH_SHORT).show()
             binding.connectText.text = "Device: $device"

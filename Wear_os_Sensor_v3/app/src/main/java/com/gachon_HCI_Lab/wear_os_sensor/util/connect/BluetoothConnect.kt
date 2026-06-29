@@ -37,11 +37,21 @@ object BluetoothConnect {
 
     @SuppressLint("MissingPermission")
     fun searchDevice(): String {
-        pairedDvices = mBluetoothAdapter.bondedDevices
-        val connected = getParingBluetoothDevice(pairedDvices) ?: return "error"
-        mBluetoothDevice = mBluetoothAdapter.getRemoteDevice(connected.toString())
-        deviceName = connected.name
-        return connected.name
+        // [2026-06-30] 이유: bondedDevices/기기명 접근은 Android 12+에서 BLUETOOTH_CONNECT 런타임 권한 필요 →
+        //   권한 허용 전 ConnectFragment.onCreateView가 호출하면 SecurityException으로 앱 크래시(logcat 00:56 확인)
+        //   | 목적: 권한 미허용·BT 접근 실패 시 크래시 대신 "error" 반환해 ConnectFragment가 Search 상태로 안전 폴백
+        return try {
+            pairedDvices = mBluetoothAdapter.bondedDevices
+            val connected = getParingBluetoothDevice(pairedDvices) ?: return "error"
+            // [2026-06-30] 이유: connected.toString()이 Android 12+/Wear OS에서 마스킹 주소(XX:XX:XX:XX:70:FC)를
+            //   반환해 getRemoteDevice()가 IllegalArgumentException으로 앱 크래시 | 목적: 이미 가진 페어링 기기 객체를 직접 사용
+            mBluetoothDevice = connected
+            deviceName = connected.name
+            connected.name
+        } catch (e: Exception) {
+            Log.e("BluetoothConnect", "Bluetooth 권한 없음 또는 기기 검색 실패", e)
+            "error"
+        }
     }
 
     @SuppressLint("MissingPermission")

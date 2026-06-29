@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-06-30 — 워치 셋업 자동화 스크립트(setup_watch.ps1) 추가
+- 이유: 앱은 시스템 설정 화면을 스크롤/토글할 수 없어 '사용하지 않을 때 앱 일시정지' 토글을 코드로 끌 수 없음(크로스 앱 UI 조작 금지). 대상자 워치마다 설치 후 권한·일시정지·배터리 최적화를 수동 설정하면 번거롭고 누락 위험.
+- 목적: ADB로 설치~설정을 한 번에. ① gradlew installDebug 설치 ② pm grant로 런타임 권한 직접 부여(앱 '권한' 화면 불필요) ③ appops `AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore`로 앱 일시정지 해제 ④ deviceidle whitelist로 배터리 최적화 제외 ⑤ 검증 출력.
+- 파일: `setup_watch.ps1`
+- 비고: 무선 페어링(adb pair, 1회성 코드)은 자동화 불가 — 최초 1회 수동 후 `-Serial <IP:PORT>` 전달. 옵션: `-SkipInstall`(설정만). Samsung Health [Dev mode] 등 시스템 API 미지원 항목은 여전히 수동. 실기기 미검증(기기 offline 상태) — online 시 1회 동작 확인 필요.
+
+## 2026-06-30 — startup 전구간 로그 삽입 + 앱 일시정지(hibernation) 해제 유도 재시도
+- 이유: 앞서 설정 자동실행이 진입을 깨졌을 때(b0ef2e9에서 제거) log.txt로 어느 단계에서 깨졌는지 짚기 어려웠음. 진단 가능한 상태로 만든 뒤 '사용하지 않을 때 앱 활동 일시정지' 해제 유도(2번 방식)를 다시 시도.
+- 목적:
+  - (로그) MainActivity onCreate 각 단계·권한 요청/결과·설정 유도 전과정에 `Log.i(TAG="WearStartup")` 삽입. ConnectFragment onCreateView/searchBluetoothDevice도 동일 태그로 묶음 → logcat `-s WearStartup` 한 필터로 진입 흐름 추적. ExceptionHandler를 기존 기본 핸들러로 체이닝 + full stacktrace를 우리 태그로 기록(기존 printStackTrace는 추적 약했음, nullability 경고도 해소).
+  - (2번 방식 재시도) 깨졌던 원인 회피: ① 첫 프레임 전 동기 실행 금지 → 권한 콜백(onRequestPermissionsResult) 후, 또는 요청할 권한이 없으면 decorView.post로 지연. ② raw 인텐트(ACTION_AUTO_REVOKE_PERMISSIONS) 대신 `IntentCompat.createManageUnusedAppRestrictionsIntent`로 라우팅 위임. ③ `PackageManagerCompat.getUnusedAppRestrictionsStatus`로 상태 확인해 이미 해제/미지원이면 설정 화면 안 띄움. 모든 단계 try/catch + 로그로 진입 차단 방지.
+- 파일: `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/MainActivity.kt`, `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/ConnectFragment.kt`
+- 비고: compileDebugKotlin BUILD SUCCESSFUL 확인. 실기기 검증 필요 — 설치 후 `adb logcat -s WearStartup:* AndroidRuntime:E -d > log.txt`로 새 로그 수집. Wear OS는 설정 UI가 폰과 달라 hibernation 화면 라우팅이 기기별로 다를 수 있으니 실제 이동 화면 확인 필요. core-ktx 1.9.0 헬퍼·Guava ListenableFuture 사용(기존 의존성).
+
+## 2026-06-30 — 첫 실행 크래시 2종 수정 (마스킹 BT 주소 + BLUETOOTH_CONNECT 권한)
+- 이유: `BluetoothConnect.searchDevice()`에서 2종 FATAL 크래시 확인(logcat 덤프 log.txt). ① 페어링 기기 객체를 `connected.toString()`으로 주소 문자열화 후 `getRemoteDevice()`로 재생성 → Android 12+/Wear OS가 `toString()`을 마스킹 주소(`XX:XX:XX:XX:70:FC`)로 반환해 `IllegalArgumentException: ... is not a valid Bluetooth address`(00:47/00:53/00:54/01:06). ② `bondedDevices`/기기명 접근이 BLUETOOTH_CONNECT 런타임 권한을 요구하는데 권한 허용 전 `ConnectFragment.onCreateView`가 호출 → `SecurityException: Need android.permission.BLUETOOTH_CONNECT ... getBondedDevices`(00:56). 둘 다 진입 직후 앱이 죽어 스플래시/버튼 멈춤의 실제 근본 원인.
+- 목적: ① 불필요한 주소 왕복 제거, `getParingBluetoothDevice()`가 반환한 `BluetoothDevice`를 그대로 사용. ② `searchDevice()` 전체를 try/catch로 감싸 권한 미허용·BT 접근 실패 시 크래시 대신 "error" 반환 → ConnectFragment가 Search 상태로 안전 폴백.
+- 파일: `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/util/connect/BluetoothConnect.kt`
+- 비고: 워치 ADB online 상태에서 `gradlew installDebug`로 첫 실행 정상 진입 확인 필요(현 log.txt는 수정 전 옛 코드 기록이라 검증 불가 — 재설치 후 새 logcat 필요). 워치 logcat 덤프 `log.txt`는 .gitignore에 추가(루트). 권한이 거부된 경우 BT 전송 자체는 동작 안 함 — 권한 보장 흐름은 MainActivity 런타임 권한 요청과 정합 필요(후속 검토).
+
 ## 2026-06-30 — 설정 자동실행 제거 (엉뚱한 라우팅·진입 깨짐 해결)
 - 이유: `guideSystemSettingsOnce()`가 `ACTION_AUTO_REVOKE_PERMISSIONS`·배터리 최적화 설정 화면을 startActivity로 자동 실행 → Wear OS에서 엉뚱한 설정 화면으로 라우팅되고 첫 진입이 깨짐(로딩 아이콘도 안 뜸). (참고: `adb logcat -d`는 읽기 전용 덤프라 원인 아님.)
 - 목적: 시스템 설정 화면 자동 실행을 전부 제거. onCreate는 스플래시→ConnectFragment→헬스init→런타임 권한 요청만 수행. 배터리/일시중지는 자동 토글이 OS상 불가하므로 수동 안내로 남김(추후 앱 내 버튼 등 안전한 방식으로 재검토).

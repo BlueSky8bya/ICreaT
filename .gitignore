@@ -18,6 +18,9 @@ local.properties
 logs/
 **/logs/
 server.log
+log.txt
+**/log.txt
+logcat*.txt
 
 # Android / Gradle
 .gradle/
