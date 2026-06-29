@@ -627,6 +627,8 @@ for i, (q, a) in enumerate(qas):
              a, size=12, color=GRAY_TEXT)
 
 
-out = r"c:\projects\iCreat\reports\2026-05-13_meeting_update.pptx"
+import os
+# 산출물은 reports/decks/에 저장(builders/ 기준 상대경로). 저장소 이동에도 안전. (경로 버그 수정 2026-06-29, 폴더정리 2026-06-29)
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "decks", "2026-05-13_meeting_update.pptx")
 prs.save(out)
 print(f"saved: {out}")

@@ -1,14 +1,18 @@
+> ✅ **상태: monorepo 전환 완료 (2026-05-12).** 아래 권장 절차는 모두 실행됨 — baseline 커밋(`3a39b0c`) 생성·푸시 완료, `Sensor_monitor`/`Wear_os_Sensor_v3`는 루트에서 함께 추적 중. 이 문서는 **전환 배경·민감파일 제외 목록**의 역사적 기록으로 보존한다.
+>
+> ⚠️ 아래 "경로: `C:\projects\iCreat`"는 옛 경로다. 현재 실제 경로는 `C:\projects\Health Care\Research Assignments\iCreat`.
+
 # ICREAT 저장소 구성 메모
 
 루트 저장소:
 
-- 경로: `C:\projects\iCreat`
+- 경로: `C:\projects\iCreat` *(옛 경로 — 위 배너 참조)*
 - 원격: `https://github.com/BlueSky8bya/ICreaT.git`
 - 브랜치: `main`
 
-## 현재 상태
+## 현재 상태 *(2026-05-12 시점 기록)*
 
-루트 `ICreaT` 저장소는 새로 초기화되어 원격이 연결되었습니다. 아직 커밋/푸시는 하지 않았습니다.
+루트 `ICreaT` 저장소는 새로 초기화되어 원격이 연결되었습니다. 아직 커밋/푸시는 하지 않았습니다. *(→ 이후 완료됨, 상단 배너 참조)*
 
 하위 폴더 중 아래 두 곳은 이미 별도 Git 저장소입니다.
 

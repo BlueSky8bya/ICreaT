@@ -9,7 +9,9 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from copy import deepcopy
 import re
 
-PPT = r"c:\projects\iCreat\reports\2026-05-13_meeting_update.pptx"
+import os
+# 대상 PPT는 reports/decks/에 위치(builders/ 기준 상대경로). 저장소 이동에도 안전. (경로 버그 수정 2026-06-29, 폴더정리 2026-06-29)
+PPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "decks", "2026-05-13_meeting_update.pptx")
 
 NAVY = RGBColor(0x0F, 0x2A, 0x4A)
 BLUE = RGBColor(0x1F, 0x4E, 0x79)
