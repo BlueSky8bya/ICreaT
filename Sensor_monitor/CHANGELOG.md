@@ -13,6 +13,10 @@
 
 ---
 
-> 아직 이 구조 도입(2026-06-29) 이후 코드 변경 미기록.
-> 직전 진행 내역은 `../reports/progress_report_2026-05-26.md`, `qr_phase0_changes_2026-05-26.md` 참조.
-> 다음 변경부터 여기에 항목 추가.
+## 2026-06-29 — 앱 차별화: 이름·applicationId 분리 (동시 설치)
+- 이유: 기존 단말에 설치된 'Sensor Monitor'와 DCT 연동 테스트용 빌드를 나란히 두어야 함. applicationId가 같으면 기존 앱을 덮어씀.
+- 목적: 런처 이름 `Sensor Monitor` → `Sensor Monitor DCT`, applicationId `...user_mobile` → `...user_mobile.dct`. 별도 패키지로 동시 설치.
+- 파일: `app/build.gradle`(applicationId), `app/src/main/res/values/strings.xml`(app_name)
+- 비고: namespace는 불변 → 코드 패키지/R 클래스 그대로, Kotlin 파일 이동 없음. Firebase/google-services 없음·FileProvider authorities 없음 → applicationId 변경 충돌 없음. 코드의 `packageName` 참조는 런타임 해석이라 새 패키지로 정상 동작.
+
+> 직전 진행 내역은 `../reports/notes/progress_report_2026-05-26.md`, `../reports/notes/qr_phase0_changes_2026-05-26.md` 참조.

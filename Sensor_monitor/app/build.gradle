@@ -10,7 +10,8 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.gachon_HCI_Lab.user_mobile"
+        // [2026-06-29] 이유: 기존 Sensor Monitor와 동시 설치(연동 테스트). | 목적: 별도 패키지로 나란히 설치. namespace는 그대로 유지(코드 패키지 불변).
+        applicationId "com.gachon_HCI_Lab.user_mobile.dct"
         minSdk 24
         targetSdk 33
         versionCode 2
