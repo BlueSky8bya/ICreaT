@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import com.gachon_HCI_Lab.user_mobile.activity.SensorActivity
 import okhttp3.*
+import org.json.JSONObject
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -14,9 +15,10 @@ import java.util.concurrent.TimeUnit
 abstract class ServerConnection {
     companion object {
         private const val TAG = "Server Connection"
-        private const val REQUEST_URL = "http://114.70.120.121:443/forUser/postCurrentData/"
-        // [중요] 로그인 주소가 반드시 정의되어 있어야 합니다.
-        private const val LOGIN_URL = "http://114.70.120.121:443/forUser/registUser/"
+        // [Phase 0] 베데스다 multipart 업로드 엔드포인트.
+        // 주의: 가이드(§2)의 "/iCReaT_DCT/invoke/..." 경로는 prefix 오류로 404(200+HTML)였음.
+        // 실제 동작 경로는 루트 "/invoke/..." (curl로 200 + status:success, DB 적재 검증 완료).
+        private const val REQUEST_URL = "https://icreatdct.btsd.io/invoke/DCT/Sensor/uploadCsv"
 
         // 클라이언트를 싱글톤으로 관리 (메모리 효율)
         private val client = OkHttpClient.Builder()
@@ -26,64 +28,43 @@ abstract class ServerConnection {
             .build()
 
         /**
-         * [login] LoginActivity에서 호출하는 함수
+         * [enterSensor] Phase 0 진입 함수.
+         * 베데스다는 무인증(a) 정책이며 로그인/세션 API가 없으므로 네트워크 로그인을 수행하지 않는다.
+         * studyId/subjectId 는 DeviceInfo 의 테스트 하드코딩 값(또는 추후 QR 스캔 값)을 사용한다.
          */
-        fun login(authcode: String, deviceID: String = "123456", regID: String = "1234567", context: Activity) {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val strDate: String = dateFormat.format(Date())
+        fun enterSensor(
+            deviceID: String,
+            studyId: String = DeviceInfo.TEST_STUDY_ID,
+            subjectId: String = DeviceInfo.TEST_SUBJECT_ID,
+            context: Activity
+        ) {
+            CacheManager.saveCacheFile(context, "$studyId|$subjectId", "login.txt")
 
-            val httpBuilder = HttpUrl.parse(LOGIN_URL)?.newBuilder()?.apply {
-                addQueryParameter("userID", authcode)
-                addQueryParameter("deviceID", deviceID)
-                addQueryParameter("regID", regID)
-                addQueryParameter("timestamp", strDate)
+            val intent = Intent(context, SensorActivity::class.java).apply {
+                putExtra("DeviceID", deviceID)
+                putExtra("studyId", studyId)
+                putExtra("subjectId", subjectId)
             }
-
-            if (httpBuilder == null) {
-                Log.e(TAG, "URL 생성 실패")
-                return
-            }
-
-            val request = Request.Builder()
-                .url(httpBuilder.build())
-                .build()
-
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.e(TAG, "Login 실패: ${e.message}")
-                    android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        android.widget.Toast.makeText(context, "네트워크 연결 실패", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.code() == 200) {
-                        Log.d(TAG, "Login 성공")
-                        CacheManager.saveCacheFile(context, authcode, "login.txt")
-
-                        val intent = Intent(context, SensorActivity::class.java).apply {
-                            putExtra("ID", authcode)
-                        }
-                        context.startActivity(intent)
-                        context.finish()
-                    } else {
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            android.widget.Toast.makeText(context, "로그인 실패 (코드: ${response.code()})", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    response.close()
-                }
-            })
+            context.startActivity(intent)
+            context.finish()
         }
 
         /**
          * [postFile] AcceptService에서 호출하는 함수
          */
-        fun postFile(file: File, userID: String, battery: String, timestamp: String, onResult: (Boolean) -> Unit) {
+        fun postFile(
+            file: File,
+            studyId: String,
+            subjectId: String,
+            battery: String,
+            timestamp: String,
+            onResult: (Boolean) -> Unit
+        ) {
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("csvfile", file.name, RequestBody.create(MediaType.parse("text/csv"), file))
-                .addFormDataPart("userID", userID)
+                .addFormDataPart("studyId", studyId)
+                .addFormDataPart("subjectId", subjectId)
                 .addFormDataPart("battery", battery)
                 .addFormDataPart("timestamp", timestamp)
                 .build()
@@ -99,16 +80,32 @@ abstract class ServerConnection {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
+                    // 베데스다 서버는 잘못된 경로에도 HTTP 200 + HTML 에러 페이지를 반환한다.
+                    // 따라서 HTTP 코드만이 아니라 응답 body의 JSON status=="success"까지 확인해야 한다.
+                    val bodyStr = try { response.body()?.string() ?: "" } catch (e: Exception) { "" }
+                    val success = response.isSuccessful && isSuccessBody(bodyStr)
+                    if (success) {
                         Log.d(TAG, "전송 성공: ${response.code()}")
                         onResult(true)
                     } else {
-                        saveErrorLog("Server Error: ${response.code()}")
+                        saveErrorLog("Server Error: code=${response.code()} body=${bodyStr.take(300)}")
                         onResult(false)
                     }
                     response.close()
                 }
             })
+        }
+
+        /**
+         * 응답 body가 베데스다 성공 규격(JSON status=="success")인지 확인.
+         * HTML 에러 페이지 등 JSON이 아니면 파싱 실패 → false.
+         */
+        private fun isSuccessBody(body: String): Boolean {
+            return try {
+                JSONObject(body).optString("status") == "success"
+            } catch (e: Exception) {
+                false
+            }
         }
 
         fun saveErrorLog(errorMessage: String) {

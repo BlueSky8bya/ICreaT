@@ -9,9 +9,9 @@ android {
     defaultConfig {
         applicationId "com.gachon_HCI_Lab.wear_os_sensor_v3"
         minSdk 30
-        targetSdk 33
-        versionCode 15
-        versionName "8.3"
+        targetSdk 34
+        versionCode 16
+        versionName "8.4"
     }
 
     buildTypes {

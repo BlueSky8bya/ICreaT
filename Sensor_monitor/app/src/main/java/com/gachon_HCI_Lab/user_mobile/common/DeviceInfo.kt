@@ -2,25 +2,38 @@ package com.gachon_HCI_Lab.user_mobile.common
 
 /**
  * 디바이스 정보를 저장하는 싱글톤 클래스
- * _deviceID : 디바이스 고유 ID 워치와 블루투스 소켓 연결시 가져온다.
- * _uID : 사용자 고유 ID 로그인시 사용자가 입력한다.
+ * _dID : 디바이스 고유 ID 워치와 블루투스 소켓 연결시 가져온다.
+ * _studyId / _subjectId : iCReaT 과제/대상자 식별자.
+ *   - Phase 0(엔드포인트 검증): 아래 TEST_* 하드코딩 값을 사용한다.
+ *   - Phase 1(정식): QR 스캔 결과(stdy_no/subject_id)로 주입한다.
  * _battery : 디바이스 배터리 잔량 워치와 블루투스 소켓 연결시 가져온다.
  */
 class DeviceInfo private constructor() {
     companion object{
-        lateinit var _dID : String
-        lateinit var _uID : String
-        lateinit var _battery : String
+        // [Phase 0] 베데스다 제공 테스트 대상자 (API_sensor_upload_guide.md §8, No.1)
+        const val TEST_STUDY_ID = "C250005"
+        const val TEST_SUBJECT_ID = "121-001"
+
+        var _dID : String = ""
+        var _studyId : String = TEST_STUDY_ID
+        var _subjectId : String = TEST_SUBJECT_ID
+        var _battery : String = "100"
 
         /**
          * 디바이스 정보를 초기화하는 함수
-         * _deviceID : 디바이스 고유 ID
-         * _uID : 사용자 고유 ID 로그인시 사용자가 입력한다.
-         * _battery : 디바이스 배터리 잔량
+         * deviceID : 디바이스 고유 ID
+         * studyId / subjectId : 과제/대상자 식별자 (미지정 시 테스트 하드코딩 값)
+         * battery : 디바이스 배터리 잔량
          */
-        fun init(deviceID : String = "", uID : String = "", battery: String = "100") {
+        fun init(
+            deviceID: String = "",
+            studyId: String = TEST_STUDY_ID,
+            subjectId: String = TEST_SUBJECT_ID,
+            battery: String = "100"
+        ) {
             _dID = deviceID
-            _uID = uID
+            _studyId = studyId
+            _subjectId = subjectId
             _battery = battery
         }
 
@@ -31,8 +44,12 @@ class DeviceInfo private constructor() {
             _dID = deviceID
         }
 
-        fun setUID(uID: String) {
-            _uID = uID
+        fun setStudyId(studyId: String) {
+            _studyId = studyId
+        }
+
+        fun setSubjectId(subjectId: String) {
+            _subjectId = subjectId
         }
 
         fun setBattery(battery: String) {

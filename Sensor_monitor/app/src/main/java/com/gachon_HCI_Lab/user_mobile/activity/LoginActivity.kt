@@ -143,19 +143,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupLoginLogic(deviceID: String) {
+        // [Phase 0] 베데스다 무인증(a) 정책: 별도 로그인 API가 없으므로 네트워크 로그인 없이 진입한다.
+        // studyId/subjectId 는 DeviceInfo 의 테스트 하드코딩 값을 사용한다.
+        // (Phase 1 에서 QR 스캔 결과를 ServerConnection.enterSensor(...) 인자로 전달하도록 확장)
         binding.loginBtn.setOnClickListener {
-            val inputId = binding.id.text.toString().trim()
-            if (inputId.isNotEmpty()) {
-                ServerConnection.login(inputId, deviceID = deviceID, context = this)
-            } else {
-                Toast.makeText(this, "아이디를 입력해주세요.", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        // [안전] 1, 2, 3단계가 모두 끝나서야 비로소 자동 로그인이 확인됨
-        val cache = CacheManager.loadCacheFile(this, "login.txt")
-        if (cache != null && !isShowingDialog) {
-            ServerConnection.login(cache, deviceID = deviceID, context = this)
+            ServerConnection.enterSensor(deviceID = deviceID, context = this)
         }
     }
 

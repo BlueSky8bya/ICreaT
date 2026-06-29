@@ -246,12 +246,13 @@ class AcceptService : Service() {
                     CsvController.writeLog("[MERGE] ${sensor.value}: 병합 완료")
 
                     val epochTime = System.currentTimeMillis() / 1000L
-                    val userID = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._uID
+                    val studyId = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._studyId
+                    val subjectId = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._subjectId
                     val battery = com.gachon_HCI_Lab.user_mobile.common.DeviceInfo._battery
 
-                    CsvController.writeLog("[UPLOAD] 전송 시도: $mergedFileName (UID: $userID, BAT: $battery)")
+                    CsvController.writeLog("[UPLOAD] 전송 시도: $mergedFileName (STUDY: $studyId, SUBJECT: $subjectId, BAT: $battery)")
 
-                    com.gachon_HCI_Lab.user_mobile.common.ServerConnection.postFile(mergedFile, userID, battery, epochTime.toString()) { isSuccess ->
+                    com.gachon_HCI_Lab.user_mobile.common.ServerConnection.postFile(mergedFile, studyId, subjectId, battery, epochTime.toString()) { isSuccess ->
                         if (isSuccess) {
                             val destFile = java.io.File(sendedDir, mergedFileName)
                             if (mergedFile.renameTo(destFile)) {

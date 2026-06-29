@@ -50,8 +50,9 @@ class SensorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         DeviceInfo.init(
-            intent.getStringExtra("DeviceID").toString(),
-            intent.getStringExtra("ID").toString()
+            deviceID = intent.getStringExtra("DeviceID").orEmpty(),
+            studyId = intent.getStringExtra("studyId") ?: DeviceInfo.TEST_STUDY_ID,
+            subjectId = intent.getStringExtra("subjectId") ?: DeviceInfo.TEST_SUBJECT_ID
         )
 
         binding = ActivitySensorBinding.inflate(layoutInflater)
