@@ -211,8 +211,9 @@ class AcceptService : Service() {
         val calendar = java.util.Calendar.getInstance()
         val minute = calendar.get(java.util.Calendar.MINUTE)
         val fixedMinute = if (minute >= 30) "30" else "00"
-        val dateFormat = java.text.SimpleDateFormat("yyMMdd", java.util.Locale.getDefault())
-        val hourFormat = java.text.SimpleDateFormat("HH", java.util.Locale.getDefault())
+        // 파일명 날짜/시각은 기기 시간대 무관하게 KST 고정 (로그와 일관).
+        val dateFormat = CsvController.kstFormat("yyMMdd")
+        val hourFormat = CsvController.kstFormat("HH")
 
         val dateStr = dateFormat.format(calendar.time)
         val hourStr = hourFormat.format(calendar.time)
