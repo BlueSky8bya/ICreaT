@@ -221,7 +221,7 @@ class AcceptService : Service() {
 
         for (sensor in com.gachon_HCI_Lab.user_mobile.sensor.model.SensorEnum.values()) {
             val sensorType = sensor.value.split("_").getOrNull(0) ?: continue
-            val sensorDir = java.io.File("$downloadBasePath/sensor_data/$sensorType")
+            val sensorDir = java.io.File("$downloadBasePath/${CsvController.ROOT_DIR}/$sensorType")
             val sendedDir = java.io.File(sensorDir, "sended")
             if (!sendedDir.exists()) sendedDir.mkdirs()
 

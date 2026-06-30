@@ -15,6 +15,10 @@ import java.util.TimeZone
 object CsvController {
     private const val TAG = "CsvController"
 
+    // DCT 전용 데이터 루트. 원본 앱(sensor_data)과 분리해 폴더 공유로 인한
+    // 파일 소유권 충돌(로그 append 실패)·데이터 교차오염을 방지.
+    const val ROOT_DIR = "sensor_data_DCT"
+
     // 로그/파일명 시각은 기기 시간대와 무관하게 항상 한국시간(KST)으로 기록.
     // 주의: 서버 전송 timestamp는 epoch(System.currentTimeMillis)라 시간대 영향 없음 — 별개.
     val KST: TimeZone = TimeZone.getTimeZone("Asia/Seoul")
@@ -29,7 +33,7 @@ object CsvController {
     fun writeLog(message: String) {
         try {
             val basePath = getDownloadPath()
-            val logDir = File(basePath, "sensor_data/logs")
+            val logDir = File(basePath, "$ROOT_DIR/logs")
 
             if (!logDir.exists()) {
                 val created = logDir.mkdirs()
@@ -73,7 +77,7 @@ object CsvController {
         val heartbeat = now - lastBatteryLogTime >= BATTERY_HEARTBEAT_MS
         if (!changed && !heartbeat) return
         try {
-            val dir = File(getDownloadPath(), "sensor_data/battery")
+            val dir = File(getDownloadPath(), "$ROOT_DIR/battery")
             if (!dir.exists() && !dir.mkdirs()) {
                 Log.e(TAG, "battery dir creation failed")
                 return
@@ -100,7 +104,7 @@ object CsvController {
     fun getSensorDirectory(sensorName: String): File {
         val sensorType = sensorName.split("_").getOrNull(0) ?: "Unknown"
         val basePath = getDownloadPath()
-        val sensorDataDir = File(basePath, "sensor_data")
+        val sensorDataDir = File(basePath, ROOT_DIR)
         if (!sensorDataDir.exists()) sensorDataDir.mkdirs()
 
         val dir = File(sensorDataDir, sensorType)
