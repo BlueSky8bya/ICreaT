@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-06-30 — PPG 녹색 LED STOP 시 OFF 수정 (옛 standalone repo에서 이식)
+- 이유: 워치 STOP 버튼으로 종료해도 PPG 녹색 LED가 켜진 채 남음. 원인 = `stopService`(STOP 버튼)는 `onStartCommand`를 거치지 않고 바로 `onDestroy`로 진입하는데, 기존 정리(`ppg.destroy()`)는 `stopForground()`에만 있어 호출되지 않음. 또한 이 수정이 모노레포가 아니라 **옛 독립 저장소 `github.com/BlueSky8bya/Wear_os_Sensor_v3.git`(커밋 a0b5a0b)** 에 올라가 있어 모노레포엔 누락.
+- 목적: ① `PpgUtil.destroy()`를 멱등화 — 리스너 해제(녹색 LED OFF)·`ppgTrackers.clear()`·서비스 disconnect를 try/catch + null-safe로. ② `SensorService`에 `@Volatile cleaned` 가드를 둔 멱등 `cleanup()` 신설, `onDestroy()`에서 호출 → STOP/stopSelf 등 **모든 종료 경로**에서 LED OFF 보장. `stopForground()`는 broadcast + `stopSelf()`만 하고 실제 정리는 onDestroy로 일원화.
+- 파일: `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/util/PpgUtil.kt`, `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/SensorService.kt`
+- 비고: 옛 standalone repo와 모노레포가 갈라져 있어(특히 `MainActivity.kt` 209줄 차이 — 모노레포의 startup 크래시 수정 보유) **통째 동기화 금지**, 이 2개 파일만 외과적 이식. a0b5a0b의 PpgUtil/SensorService는 PPG hunk 외 모노레포와 동일함을 확인 후 적용. **후속: 옛 repo로의 push 중단하고 이후 작업은 모노레포로 일원화 필요**(분기 누적 위험).
+
 ## 2026-06-30 — 워치 셋업 자동화 스크립트(setup_watch.ps1) 추가
 - 이유: 앱은 시스템 설정 화면을 스크롤/토글할 수 없어 '사용하지 않을 때 앱 일시정지' 토글을 코드로 끌 수 없음(크로스 앱 UI 조작 금지). 대상자 워치마다 설치 후 권한·일시정지·배터리 최적화를 수동 설정하면 번거롭고 누락 위험.
 - 목적: ADB로 설치~설정을 한 번에. ① gradlew installDebug 설치 ② pm grant로 런타임 권한 직접 부여(앱 '권한' 화면 불필요) ③ appops `AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore`로 앱 일시정지 해제 ④ deviceidle whitelist로 배터리 최적화 제외 ⑤ 검증 출력.

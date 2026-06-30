@@ -77,15 +77,15 @@ class PpgUtil {
         }
     }
 
+    // [2026-06-30] 이유: 워치 STOP 후에도 PPG 녹색 LED가 켜진 채 남는 문제 | 목적: 멱등 정리로 리스너 해제·LED OFF 보장(여러 번 호출/null 안전)
+    // 멱등(여러 번 호출돼도 안전). PPG 리스너를 해제해 녹색 LED를 끈다.
     fun destroy(){
-        for((ppgTracker, event) in ppgTrackers!!){
-            if(ppgTracker != null) {
-                ppgTracker.unsetEventListener()
-            }
+        for((ppgTracker, _) in ppgTrackers){
+            try { ppgTracker.unsetEventListener() } catch (_: Exception) {}
         }
-        if (healthTrackingService != null) {
-            healthTrackingService!!.disconnectService()
-        }
+        ppgTrackers.clear()
+        try { healthTrackingService?.disconnectService() } catch (_: Exception) {}
+        healthTrackingService = null
     }
 
     private fun checkPermission(context: Context?, permissions: Array<String>): Boolean {

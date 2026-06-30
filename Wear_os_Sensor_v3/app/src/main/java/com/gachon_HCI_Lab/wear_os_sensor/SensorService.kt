@@ -143,15 +143,23 @@ class SensorService : Service(), SensorEventListener {
         }
     }
 
+    // [2026-06-30] 이유: STOP 버튼 종료(stopService)가 onStartCommand를 안 거쳐 PPG LED OFF 누락 | 목적: 정리 로직을 onDestroy의 멱등 cleanup()으로 일원화
     fun stopForground() {
-        isServiceRunning = false
-        ppg.destroy()
-        sensorViewModel.unRegister()
+        // 실제 정리는 onDestroy()에서 일괄 수행한다(stopService 등 모든 종료 경로 커버).
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
-        dataSender.disconnect()
-
-        wakeLock?.let { if (it.isHeld) it.release() }
         stopSelf()
+    }
+
+    // 멱등 정리: 센서 루프 중단 + PPG 리스너 해제(녹색 LED OFF) + BT 해제 + WakeLock 반납.
+    @Volatile private var cleaned = false
+    private fun cleanup() {
+        if (cleaned) return
+        cleaned = true
+        isServiceRunning = false
+        ppg.destroy() // 녹색 LED OFF
+        if (::sensorViewModel.isInitialized) sensorViewModel.unRegister()
+        dataSender.disconnect()
+        wakeLock?.let { if (it.isHeld) it.release() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -166,8 +174,9 @@ class SensorService : Service(), SensorEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        isServiceRunning = false
-        wakeLock?.let { if (it.isHeld) it.release() }
+        // stopService(워치 STOP 버튼)는 onStartCommand를 거치지 않고 바로 onDestroy로 오므로,
+        // PPG 리스너 해제(녹색 LED OFF)를 반드시 여기서 한다.
+        cleanup()
 
         vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
 
