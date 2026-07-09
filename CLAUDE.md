@@ -29,12 +29,14 @@
 | `reports/` | 진행보고 산출물 | Markdown + python-pptx | 보고서 작성 → PPT 변환 (§3) |
 | `reports/` | 진행보고 산출물 | Markdown + python-pptx | `decks/`(.pptx)·`builders/`(.py)·`notes/`(.md) 3분류 (§3) |
 | `docs/` | 저장소 운영 메모 | Markdown | git 흐름(`git_workflow.md`), monorepo 전환 이력(`repository_plan.md`) |
+| `mails/` | 베데스다 담당자 메일 아카이브 | Markdown + 첨부파일 | 메일 본문 문서화(`threads/`)·주고받은 파일 보관(`attachments/`) |
 | `pbcr_source/key/` | 키/시크릿 | — | **건드리지 마라. git 제외 대상.** |
 
 ### 라우팅 규칙
 - **폴더 진입 시 그 폴더의 `CLAUDE.md`부터 읽어라.** 각 라우팅 폴더에 전용 지침서가 있다 — 토큰 낭비 없이 바로 길 찾는다:
   - `reports/CLAUDE.md`, `Sensor_monitor/CLAUDE.md`, `Wear_os_Sensor_v3/CLAUDE.md`, `pbcr_source/CLAUDE.md`, `SLBM_hyuk-main_0730/CLAUDE.md`
 - 베데스다 업로드 코드 작업 전 → `pbcr_source/API_sensor_upload_guide.md`, `reports/notes/bethesda_*.md` 먼저 읽기.
+- 베데스다 담당자와의 합의·스펙 확인(필드명, 식별자, 엔드포인트, 기한) → `mails/threads/` 에서 1차 출처 확인. 코드 추측 전 실제 메일 근거 우선.
 - 어느 폴더 작업인지 모호하면 추측 금지 → `cavecrew-investigator` 또는 `Explore`로 위치부터 찾기.
 - 저장소 운영은 `docs/`: git 기본 흐름·되돌리기는 `docs/git_workflow.md`, monorepo 전환 배경·민감파일 제외 목록은 `docs/repository_plan.md`(전환 완료 이력).
 - `Sensor_monitor/`, `Wear_os_Sensor_v3/`는 과거 독립 repo였다가 monorepo로 통합됨 (`docs/repository_plan.md`). 이제 루트에서 함께 추적된다.
