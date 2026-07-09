@@ -49,10 +49,13 @@ class SensorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // [2026-07-09] 이유: QR 로그인 Phase 1 — extras 누락 시 곧장 TEST ID로 빠지면 스캔한 대상자 대신 테스트 ID로 업로드될 위험. | 목적: extras → 캐시(QR 스캔 저장값) → TEST 순 fallback으로 임상 식별자 우선 복원.
+        val cachedIds = CacheManager.loadCacheFile(this, "login.txt")?.split("|")
+            ?.takeIf { it.size == 2 && it[0].isNotBlank() && it[1].isNotBlank() }
         DeviceInfo.init(
             deviceID = intent.getStringExtra("DeviceID").orEmpty(),
-            studyId = intent.getStringExtra("studyId") ?: DeviceInfo.TEST_STUDY_ID,
-            subjectId = intent.getStringExtra("subjectId") ?: DeviceInfo.TEST_SUBJECT_ID
+            studyId = intent.getStringExtra("studyId") ?: cachedIds?.get(0) ?: DeviceInfo.TEST_STUDY_ID,
+            subjectId = intent.getStringExtra("subjectId") ?: cachedIds?.get(1) ?: DeviceInfo.TEST_SUBJECT_ID
         )
 
         binding = ActivitySensorBinding.inflate(layoutInflater)

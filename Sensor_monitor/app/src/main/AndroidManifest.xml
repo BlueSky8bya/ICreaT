@@ -21,6 +21,8 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:targetApi="30" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- [2026-07-09] 이유: QR 로그인 Phase 1 — zxing 스캔에 카메라 필요. | 목적: 대상자 QR 스캔으로 studyId/subjectId 매칭 -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:name=".ApplicationCrashService"
@@ -55,6 +57,13 @@
             android:name=".activity.LoginActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true" />
+
+        <!-- [2026-07-09] QR 스캔 화면 세로 고정 (zxing 기본은 sensorLandscape) -->
+        <activity
+            android:name=".activity.PortraitCaptureActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/zxing_CaptureTheme"
+            android:windowSoftInputMode="stateAlwaysHidden" />
 
         <activity
             android:name=".activity.SensorActivity"

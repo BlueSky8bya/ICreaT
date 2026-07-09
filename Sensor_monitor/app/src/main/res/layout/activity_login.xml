@@ -36,23 +36,37 @@
         android:id="@+id/tvSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="16dp"
         android:text="워치 데이터 수집 앱"
         android:textColor="@color/text_secondary"
         android:textSize="15sp"
         android:fontFamily="sans-serif"
         android:letterSpacing="0.01"
-        app:layout_constraintBottom_toTopOf="@id/loginBtn"
+        app:layout_constraintBottom_toTopOf="@id/tvScanResult"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- [2026-06-30] DCT 앱은 무인증 진입(베데스다 정책). 이메일 입력칸 제거 — 하드코딩 studyId/subjectId로 진입. 정식 로그인은 추후 QR 스캔으로 ID 주입. -->
+    <!-- [2026-07-09] QR 로그인 Phase 1: 스캔 결과(studyId/subjectId) 표시. 미스캔 시 안내 문구. -->
+    <TextView
+        android:id="@+id/tvScanResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:text="QR 스캔으로 대상자를 매칭해 주세요"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintBottom_toTopOf="@id/qrScanBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- [2026-07-09] QR 로그인 Phase 1: 대상자 QR 스캔 버튼 (pbcr과 동일 JSON 규격: stdy_no/subject_id) -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/loginBtn"
+        android:id="@+id/qrScanBtn"
         android:layout_width="0dp"
         android:layout_height="60dp"
         android:layout_marginHorizontal="32dp"
-        android:text="시작"
+        android:text="QR 스캔"
         android:textSize="17sp"
         android:textColor="#FFFFFF"
         app:cornerRadius="16dp"
@@ -62,6 +76,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- [2026-07-09] 시작 버튼 제거 — QR 스캔 성공 시 즉시 자동 로그인. 캐시 있으면 화면 진입 없이 자동 진입. -->
 
     <TextView
         android:layout_width="wrap_content"

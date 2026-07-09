@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-07-09 — QR 로그인 Phase 1: QR 스캔으로 studyId/subjectId 매칭
+- 이유: Phase 0은 하드코딩 테스트 ID(C250005/121-001)로 진입 — 실 대상자 매칭 불가. 베데스다 권고(2026-05-12 메일 Q1)는 pbcr(작년 바코드 매칭 앱)처럼 QR 스캔으로 Study/Subject ID 매칭. `qr_login_integration_plan_2026-05-26.md` Phase 1 실행.
+- 목적: pbcr과 동일 QR JSON 규격(`stdy_no`/`subject_id`/`organ_cd`/`pat_name`) 공유 — iCReaT 발급 QR을 두 앱이 그대로 사용. zxing-android-embedded `ScanContract`로 스캔(별도 Activity 불필요, CAMERA 런타임 권한 자체 처리) → LoginActivity가 파싱해 `enterSensor(studyId, subjectId)` 호출. **화면엔 QR 스캔 버튼만** — 스캔 성공 즉시 자동 로그인, 캐시(`login.txt` `"studyId|subjectId"`, 포맷 불변) 있으면 재실행 시 화면 조작 없이 자동 진입. 별도 "시작" 버튼 없음. 비-JSON/필드누락 QR 무시. `enterSensor` TEST 기본값 제거(스캔 없이 테스트 ID 업로드 위험 차단). SensorActivity fallback을 extras→캐시→TEST 순으로 강화. pat_name은 표시용만, 미저장(개인정보).
+- 파일: `app/build.gradle`, `app/src/main/AndroidManifest.xml`, `app/src/main/res/layout/activity_login.xml`, `activity/LoginActivity.kt`, `activity/PortraitCaptureActivity.kt`(신규 — zxing 기본 가로 화면을 세로 고정으로 교체), `activity/SensorActivity.kt`, `common/ServerConnection.kt`, `test_qr/`(신규 — 테스트 QR PNG(C250005/121-001) + 생성 스크립트 `make_test_qr.py`, 실행 `py`, `qrcode[pil]` 필요)
+- 비고: iCReaT 실제 발급 QR이 위 JSON 스키마와 일치하는지 미확인(계획 문서 §7-2) — 다르면 `LoginActivity.handleQrResult()` 파서만 수정. 실기기 스캔 테스트 필요. DeviceInfo TEST 상수는 최후 fallback용으로 유지. 캐시 존재 시 자동 진입이라 **대상자 변경은 캐시 삭제(`pm clear` 또는 앱 데이터 삭제) 필요** — 재스캔 UI 필요해지면 SensorActivity에 "대상자 변경" 진입점 추가 고려.
+
 ## 2026-06-30 — 로그인 화면 이메일 입력칸 제거 (무인증 진입)
 - 이유: DCT 앱은 베데스다 무인증 정책으로 로그인 화면이 없어야 함. Phase 0 진입은 하드코딩 studyId/subjectId(C250005/121-001)로 "로그인된 셈" 치고 진행하는데, 레이아웃에 옛 "마음수첩 앱 이메일" 입력칸(`tilId`/`id`)이 잔재로 남아 있었음(코드에선 미사용).
 - 목적: 이메일 TextInputLayout 제거, 버튼 텍스트 "로그인"→"시작"으로 변경(인증 아님). subtitle 제약을 loginBtn으로 재연결. 정식 로그인은 추후 QR 스캔으로 studyId/subjectId 주입 예정.

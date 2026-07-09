@@ -28,14 +28,14 @@ abstract class ServerConnection {
             .build()
 
         /**
-         * [enterSensor] Phase 0 진입 함수.
+         * [enterSensor] 진입 함수.
          * 베데스다는 무인증(a) 정책이며 로그인/세션 API가 없으므로 네트워크 로그인을 수행하지 않는다.
-         * studyId/subjectId 는 DeviceInfo 의 테스트 하드코딩 값(또는 추후 QR 스캔 값)을 사용한다.
+         * [2026-07-09] 이유: QR 로그인 Phase 1 — TEST 하드코딩 기본값이 남으면 스캔 없이 테스트 ID로 업로드될 위험. | 목적: studyId/subjectId를 호출부(QR 스캔/캐시)가 반드시 명시하도록 기본값 제거.
          */
         fun enterSensor(
             deviceID: String,
-            studyId: String = DeviceInfo.TEST_STUDY_ID,
-            subjectId: String = DeviceInfo.TEST_SUBJECT_ID,
+            studyId: String,
+            subjectId: String,
             context: Activity
         ) {
             CacheManager.saveCacheFile(context, "$studyId|$subjectId", "login.txt")

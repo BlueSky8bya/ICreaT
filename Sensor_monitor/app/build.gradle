@@ -64,6 +64,8 @@ dependencies {
     // 유틸리티 및 통신
     implementation 'io.github.ParkSangGwon:tedpermission-normal:3.3.0'
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    // [2026-07-09] 이유: QR 로그인 Phase 1 — pbcr(qr_code_scanner_plus)과 동일 QR JSON 규격을 네이티브로 스캔. | 목적: studyId/subjectId를 QR로 주입 (qr_login_integration_plan_2026-05-26.md §6 권장 라이브러리)
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation 'org.greenrobot:eventbus:3.3.1'
