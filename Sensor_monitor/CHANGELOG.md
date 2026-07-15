@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-07-15 — BT 리스닝 소켓 누수 + 수신 스레드 중복 생성 수정 (워치 초록불·모바일 NONE 버그)
+- 이유: `createSeverSocket()`이 이전 `BluetoothServerSocket`을 닫지 않고 재생성 + `onStartCommand`마다 `AcceptThread` 무조건 신규 생성 + 스레드 사망 시 소켓 미정리 → 프로세스에 유령 SDP 레코드 누적. 워치가 같은 UUID 조회 시 accept() 없는 죽은 채널에 RFCOMM 연결 성공 → 워치는 초록불(수집 중)인데 모바일 상태는 NONE, 그래프 없음, 워치는 재연결 진동 반복. 모바일 앱 재시작으로만 복구. 디폴트 Sensor_monitor 로그(260711 14:28~14:35, THREAD_START 4회 중첩)로 확인, 코드 동일해 DCT도 같은 잠복 버그.
+- 목적: 유령 리스너 원천 차단 — ① 리스너 재생성 전 이전 소켓 close ② 스레드 종료 finally에서 클라이언트/리스닝 소켓 정리 ③ companion `runningThread`로 살아있는 스레드 재사용(중복 생성 방지) ④ `onDestroy`에서 소켓 close로 블록된 스레드 종료. 항상 리스너 1개 유지 → 워치가 언제나 살아있는 채널에 연결.
+- 파일: `service/BluetoothConnect.kt`, `service/AcceptThread.kt`, `service/AcceptService.kt`
+- 비고: 디폴트(standalone) `Sensor_monitor` 707e45a와 동일 수정 이식 (공통 수정, 양쪽 동기 완료). 워치 앱은 수정 불필요 — 재연결 루프는 정상 동작.
+
 ## 2026-07-09 — QR 로그인 Phase 1: QR 스캔으로 studyId/subjectId 매칭
 - 이유: Phase 0은 하드코딩 테스트 ID(C250005/121-001)로 진입 — 실 대상자 매칭 불가. 베데스다 권고(2026-05-12 메일 Q1)는 pbcr(작년 바코드 매칭 앱)처럼 QR 스캔으로 Study/Subject ID 매칭. `qr_login_integration_plan_2026-05-26.md` Phase 1 실행.
 - 목적: pbcr과 동일 QR JSON 규격(`stdy_no`/`subject_id`/`organ_cd`/`pat_name`) 공유 — iCReaT 발급 QR을 두 앱이 그대로 사용. zxing-android-embedded `ScanContract`로 스캔(별도 Activity 불필요, CAMERA 런타임 권한 자체 처리) → LoginActivity가 파싱해 `enterSensor(studyId, subjectId)` 호출. **화면엔 QR 스캔 버튼만** — 스캔 성공 즉시 자동 로그인, 캐시(`login.txt` `"studyId|subjectId"`, 포맷 불변) 있으면 재실행 시 화면 조작 없이 자동 진입. 별도 "시작" 버튼 없음. 비-JSON/필드누락 QR 무시. `enterSensor` TEST 기본값 제거(스캔 없이 테스트 ID 업로드 위험 차단). SensorActivity fallback을 extras→캐시→TEST 순으로 강화. pat_name은 표시용만, 미저장(개인정보).

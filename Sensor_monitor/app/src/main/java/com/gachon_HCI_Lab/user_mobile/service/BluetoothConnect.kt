@@ -16,9 +16,9 @@ import java.io.InputStream
 import java.util.*
 
 object BluetoothConnect {
-    private lateinit var serverSocket: BluetoothServerSocket
+    private var serverSocket: BluetoothServerSocket? = null
     private lateinit var bluetoothAdapter: BluetoothAdapter
-    private lateinit var socket: BluetoothSocket
+    private var socket: BluetoothSocket? = null
     private lateinit var inputStream: InputStream
     private var isRunning: Boolean = true
 
@@ -31,14 +31,18 @@ object BluetoothConnect {
 
     @SuppressLint("MissingPermission")
     fun createSeverSocket() {
+        // [2026-07-15] 이유: 이전 리스너 미정리 시 유령 SDP 레코드가 남아 워치가 accept() 없는 죽은 채널에 연결됨(워치 초록불+모바일 NONE) | 목적: 재생성 전 이전 리스너 close (Sensor_monitor 707e45a 이식)
+        closeServerSocket()
         serverSocket = bluetoothAdapter.listenUsingRfcommWithServiceRecord(SOCKET_NAME, MY_UUID)
+        CsvController.writeLog("SERVER_SOCKET: 새 리스닝 소켓 생성 (이전 소켓 정리 완료)")
     }
 
     @Throws(IOException::class)
     fun createBluetoothSocket() {
         try {
             isRunning = true
-            socket = serverSocket.accept()
+            closeSocket() // [2026-07-15] 이유: 직전 연결의 클라이언트 소켓 잔재 누수 | 목적: accept 전 정리
+            socket = (serverSocket ?: throw IOException("server socket not created")).accept()
             Log.d("socketConnect", socket.toString())
             Thread.sleep(300)
         } catch (e: IOException) {
@@ -48,10 +52,24 @@ object BluetoothConnect {
     }
 
     fun createInputStream(): InputStream {
-        inputStream = socket.inputStream
+        inputStream = socket!!.inputStream
         EventBus.getDefault().post(SocketStateEvent(SocketState.CONNECT))
         isRunning = true
         return inputStream
+    }
+
+    fun closeServerSocket() {
+        try {
+            serverSocket?.close()
+        } catch (_: Exception) {}
+        serverSocket = null
+    }
+
+    fun closeSocket() {
+        try {
+            socket?.close()
+        } catch (_: Exception) {}
+        socket = null
     }
 
     fun isBluetoothRunning(): Boolean {
@@ -70,9 +88,6 @@ object BluetoothConnect {
     }
 
     fun isConnected(): Boolean {
-        if (!::socket.isInitialized) {
-            return false
-        }
-        return socket.isConnected
+        return socket?.isConnected == true
     }
 }

@@ -44,6 +44,10 @@ import java.util.TimerTask
 class AcceptService : Service() {
     companion object {
         private const val INTERVAL_MS = 1000L * 60 * 5 // 5분 주기
+
+        // [2026-07-15] 이유: 서비스 인스턴스 재생성 후에도 이전 수신 스레드가 살아있을 수 있음 | 목적: companion에서 생존 추적해 중복 생성 방지 (Sensor_monitor 707e45a 이식)
+        @Volatile
+        private var runningThread: AcceptThread? = null
     }
     private var wakeLock: PowerManager.WakeLock? = null
     private val tag = "AcceptService"
@@ -116,6 +120,12 @@ class AcceptService : Service() {
         unregisterReceiver(bluetoothStateReceiver)
         if (::acceptThread.isInitialized) acceptThread.clear()
 
+        // [2026-07-15] 이유: 소켓 미정리 시 accept()/read() 블록 스레드가 유령 리스너와 함께 잔존 | 목적: 소켓 close로 스레드 깨워 종료 (Sensor_monitor 707e45a 이식)
+        BluetoothConnect.stopRunning()
+        BluetoothConnect.closeSocket()
+        BluetoothConnect.closeServerSocket()
+        runningThread = null
+
         timer?.cancel()
         timer = null
         mergeTimer?.cancel()
@@ -135,8 +145,18 @@ class AcceptService : Service() {
 
     private fun startForeground() {
         BluetoothConnect.createBluetoothAdapter(bluetoothAdapter)
-        acceptThread = AcceptThread(this)
         if (!EventBus.getDefault().isRegistered(this)) EventBus.getDefault().register(this)
+
+        // [2026-07-15] 이유: onStartCommand마다 스레드+리스닝 소켓 중복 생성 → 워치가 죽은 소켓에 붙음 | 목적: 살아있는 스레드 재사용 (Sensor_monitor 707e45a 이식)
+        val existing = runningThread
+        if (existing != null && existing.isAlive) {
+            CsvController.writeLog("[SVC] AcceptThread 이미 실행 중 - 중복 생성 스킵")
+            acceptThread = existing
+            return
+        }
+
+        acceptThread = AcceptThread(this)
+        runningThread = acceptThread
         acceptThread.start()
     }
 

@@ -91,6 +91,9 @@ class AcceptThread(context: Context) : Thread() {
         } catch (e: Exception) {
             CsvController.writeLog("CRITICAL_THREAD_ERROR: 최상위 루프 사망 - ${e.message}")
         } finally {
+            // [2026-07-15] 이유: 스레드 사망 시 리스닝 소켓 미정리로 유령 SDP 레코드 잔존 | 목적: 종료 시 소켓 전부 close (Sensor_monitor 707e45a 이식)
+            BluetoothConnect.closeSocket()
+            BluetoothConnect.closeServerSocket()
             CsvController.writeLog("THREAD_TERMINATED: AcceptThread가 완전히 종료되었습니다.")
             EventBus.getDefault().post(ThreadStateEvent(ThreadState.STOP))
         }
