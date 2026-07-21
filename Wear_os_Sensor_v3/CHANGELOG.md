@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-07-21 — setup_watch.ps1: 특수 권한(알림·백그라운드 센서) appops 실효화 추가
+- 이유: `pm grant`가 exit 0([OK])을 찍어도 POST_NOTIFICATIONS/BODY_SENSORS_BACKGROUND는 실제 게이트인 appop이 `ignore`로 남아 워치 설정 UI에 '거부'로 표시되는 문제 실증(7/21 현장). 알림은 이전 설치 잔존 importance=NONE, 백그라운드 센서는 포그라운드 appop이 allow여야 유효.
+- 목적: pm grant 뒤 `appops set POST_NOTIFICATION allow` + `appops set BODY_SENSORS allow` → 그 위에서 BODY_SENSORS_BACKGROUND 재부여(순서 중요). 검증부도 granted 비트뿐 아니라 appop 상태를 함께 출력하도록 강화 — 재실행만으로 UI까지 자동 허용.
+- 파일: `setup_watch.ps1`
+- 비고: -SkipInstall 스모크 테스트로 전 단계 [OK] 확인. 공통 성격(공통/DCT 동일).
+
 ## 2026-07-21 — BODY_SENSORS_BACKGROUND 권한 추가 (standalone 2bf6253 이식)
 - 이유: Wear OS 4(Android 13+)에서 화면 꺼짐/백그라운드 서비스로 심박에 접근하려면 `BODY_SENSORS`만으론 부족 — 손목을 내려 화면이 꺼지는 순간 HR 스트림이 끊겼음.
 - 목적: `BODY_SENSORS_BACKGROUND`('피트니스 및 웰니스 > 항상 허용') 선언·런타임 요청·pm grant까지 추가해 백그라운드 심박 연속 수집 확보.

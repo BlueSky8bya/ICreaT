@@ -86,6 +86,22 @@ foreach ($p in $perms) {
     } catch { Write-Warn2 "$p — 예외: $($_.Exception.Message)" }
 }
 
+# 3.5) 특수 권한 실효화 (appops) — pm grant만으론 UI에 안 켜지는 항목
+# [2026-07-21] 이유: POST_NOTIFICATIONS / BODY_SENSORS_BACKGROUND는 pm grant가 exit 0([OK])을 찍어도
+#   실제 게이트인 appop이 ignore로 남아 워치 설정 UI에 '거부'로 표시되는 문제 실증(7/21).
+#   알림은 importance=NONE(이전 설치 잔존), 백그라운드 센서는 포그라운드 appop이 allow여야 유효.
+# 목적: appop을 allow로 강제하고, 포그라운드 allow 뒤 백그라운드 권한을 재부여해 UI까지 실제 허용 반영.
+Write-Step "특수 권한 실효화 (appops allow)"
+# 알림: 권한 비트가 아니라 appop/importance가 실제 게이트
+adb @t shell cmd appops set $pkg POST_NOTIFICATION allow 2>$null
+if ($LASTEXITCODE -eq 0) { Write-OK "POST_NOTIFICATION (알림) appop allow" } else { Write-Warn2 "POST_NOTIFICATION appop 설정 실패" }
+# 피트니스/웰니스: 포그라운드 appop을 먼저 allow → 그 위에서 백그라운드(항상 허용)가 유효
+adb @t shell cmd appops set $pkg BODY_SENSORS allow 2>$null
+if ($LASTEXITCODE -eq 0) { Write-OK "BODY_SENSORS (피트니스/웰니스) appop allow" } else { Write-Warn2 "BODY_SENSORS appop 설정 실패" }
+# 포그라운드 appop이 allow된 뒤 백그라운드 권한을 재부여(순서 중요 — 먼저 grant하면 appop ignore로 되말림)
+adb @t shell pm grant $pkg android.permission.BODY_SENSORS_BACKGROUND 2>$null
+if ($LASTEXITCODE -eq 0) { Write-OK "BODY_SENSORS_BACKGROUND 재부여(항상 허용)" } else { Write-Warn2 "BODY_SENSORS_BACKGROUND 재부여 실패" }
+
 # 4) '사용하지 않을 때 앱 일시정지(hibernation/auto-revoke)' 해제
 Write-Step "앱 일시정지 해제 (appops AUTO_REVOKE_PERMISSIONS_IF_UNUSED = ignore)"
 adb @t shell cmd appops set $pkg AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore | Out-Host
@@ -107,6 +123,13 @@ if ("$wl" -match [regex]::Escape($pkg)) { Write-OK "배터리 화이트리스트
 
 Write-Host "`n--- 부여된 권한 상태 ---" -ForegroundColor Cyan
 adb @t shell dumpsys package $pkg | Select-String -Pattern "BODY_SENSORS|ACTIVITY_RECOGNITION|BLUETOOTH_CONNECT|BLUETOOTH_SCAN|POST_NOTIFICATIONS" | ForEach-Object { Write-Host "  $_" }
+
+# [2026-07-21] 특수 권한은 granted 비트만으론 UI 반영을 못 믿으므로 실제 게이트(appop)를 함께 검증
+Write-Host "`n--- 특수 권한 appop 상태(실제 게이트) ---" -ForegroundColor Cyan
+$noti = (adb @t shell cmd appops get $pkg POST_NOTIFICATION) 2>$null
+if ("$noti" -match "allow") { Write-OK "알림(POST_NOTIFICATION) appop = allow" } else { Write-Warn2 "알림 appop 미허용: $noti" }
+$body = (adb @t shell cmd appops get $pkg BODY_SENSORS) 2>$null
+if ("$body" -match "allow") { Write-OK "피트니스/웰니스(BODY_SENSORS) appop = allow" } else { Write-Warn2 "BODY_SENSORS appop 미허용: $body" }
 
 Write-Host "`n=== 셋업 완료 ===" -ForegroundColor Green
 Write-Host "참고: Samsung Health [Dev mode] 등 시스템 API로 토글 불가한 항목은 여전히 수동입니다." -ForegroundColor DarkGray
