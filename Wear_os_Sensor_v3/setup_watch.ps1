@@ -22,6 +22,8 @@ $pkg = "com.gachon_HCI_Lab.wear_os_sensor_v3"
 # 런타임(위험) 권한 — pm grant로 직접 부여하면 앱의 '권한' 화면을 누를 필요가 없음.
 $perms = @(
     "android.permission.BODY_SENSORS",
+    # [2026-07-21] Wear OS 4+: 백그라운드(화면 꺼짐) 심박 접근 = '피트니스 및 웰니스 > 항상 허용' (standalone 2bf6253 이식)
+    "android.permission.BODY_SENSORS_BACKGROUND",
     "android.permission.ACTIVITY_RECOGNITION",
     "android.permission.BLUETOOTH_CONNECT",
     "android.permission.BLUETOOTH_SCAN",

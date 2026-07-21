@@ -120,10 +120,16 @@ class SensorService : Service(), SensorEventListener {
 
     private fun handleReconnectLoop() {
         var success = false
+        var attempts = 0
         while (isServiceRunning && !success) {
             try {
                 Log.v("SensorService", "3초 후 새 소켓으로 재연결 시도...")
                 Thread.sleep(3000)
+
+                // [2026-07-21] 이유: 폰 앱 재시작으로 RFCOMM 채널이 바뀌었는데 캐시된 옛 채널로만 시도하다 영원히 못 붙는 상황 방지
+                //   | 목적: 실패가 누적되면(5회마다) SDP 캐시를 강제 갱신.
+                attempts++
+                if (attempts % 5 == 0) dataSender.refreshSdpCache()
 
                 dataSender.connect() // 새 소켓을 가져와서 연결
                 success = true

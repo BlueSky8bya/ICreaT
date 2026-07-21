@@ -62,7 +62,10 @@ object BluetoothConnect {
             if (mBluetoothSocket != null) {
                 try { mBluetoothSocket?.close() } catch (_: Exception) {}
             }
-            val uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
+            // [2026-07-21] 이유: 표준 SPP UUID는 폰 BT 스택의 유령 SPP 등록에 connect가 "성공"해버려
+            //   전송 즉시 죽고 3초마다 재연결 진동이 반복되는 버그의 근본 원인(7/21 실증) | 목적: 앱 전용 커스텀 UUID로 유령 채널 차단.
+            // 표준 SPP UUID 사용 금지 — 모바일 앱(Sensor_monitor)과 반드시 동일 값·동시 배포.
+            val uuid = UUID.fromString("f2d6b7c4-3a19-4c6b-9f52-8e4a1d7c0b31")
             mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(uuid)
 
             Thread.sleep(100)
@@ -82,6 +85,19 @@ object BluetoothConnect {
         val byteArray = createByteArrayForSensorAndBatteryData(byteBuffer, byteSensorData)
         mOutputStream.write(byteArray)
         handleBluetoothError()
+    }
+
+    /**
+     * [2026-07-21] 이유: 폰 앱 재시작 시 RFCOMM 채널 번호가 바뀌는데 캐시된 옛 채널로만 계속 시도하면 영원히 못 붙음
+     *   | 목적: 워치의 SDP 캐시를 강제 갱신. 재연결 실패 누적 시 호출.
+     */
+    @SuppressLint("MissingPermission")
+    fun refreshSdpCache() {
+        try {
+            mBluetoothDevice.fetchUuidsWithSdp()
+        } catch (e: Exception) {
+            Log.e("BluetoothConnect", "SDP 캐시 갱신 실패", e)
+        }
     }
 
     fun disconnect() {

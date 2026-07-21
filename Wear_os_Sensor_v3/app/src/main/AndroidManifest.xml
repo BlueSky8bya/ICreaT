@@ -21,6 +21,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <!-- [2026-07-21] 이유: Wear OS 4(Android 13+)에서 화면 꺼짐/백그라운드 서비스 심박 접근에 필수(없으면 손목 내리면 HR 스트림 끊김)
+         | 목적: '피트니스 및 웰니스 > 항상 허용' 권한 확보. standalone 2bf6253 이식. -->
+    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />

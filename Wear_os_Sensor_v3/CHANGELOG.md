@@ -13,6 +13,18 @@
 
 ---
 
+## 2026-07-21 — BODY_SENSORS_BACKGROUND 권한 추가 (standalone 2bf6253 이식)
+- 이유: Wear OS 4(Android 13+)에서 화면 꺼짐/백그라운드 서비스로 심박에 접근하려면 `BODY_SENSORS`만으론 부족 — 손목을 내려 화면이 꺼지는 순간 HR 스트림이 끊겼음.
+- 목적: `BODY_SENSORS_BACKGROUND`('피트니스 및 웰니스 > 항상 허용') 선언·런타임 요청·pm grant까지 추가해 백그라운드 심박 연속 수집 확보.
+- 파일: `app/src/main/AndroidManifest.xml`(선언), `.../MainActivity.kt`(런타임 요청), `setup_watch.ps1`(pm grant)
+- 비고: standalone 최신 커밋 2bf6253 이식. 공통 성격.
+
+## 2026-07-21 — standalone 레포 커스텀 UUID + SDP 캐시 갱신 이식
+- 이유: standalone(`Wear_os_Sensor_v3.git`) 최신 커밋(be7f0f1, 8412134)에 유령 SPP 채널 근본 차단·재연결 안정화 fix가 있었으나 모노레포 분기엔 미반영이었음.
+- 목적: ① 표준 SPP UUID(`00001101-...`)를 앱 전용 커스텀 UUID(`f2d6b7c4-...`)로 교체해 폰 BT 스택 유령 SPP 등록에 connect가 "성공"→즉시 죽는 3초 재연결 진동 루프 차단. ② 재연결 실패 5회마다 `refreshSdpCache()`로 SDP 캐시 강제 갱신(폰 앱 재시작 시 바뀐 RFCOMM 채널 추종).
+- 파일: `app/src/main/java/com/gachon_HCI_Lab/wear_os_sensor/util/connect/BluetoothConnect.kt`, `.../SensorService.kt`
+- 비고: 커스텀 UUID는 모바일 앱(`Sensor_monitor`)과 반드시 동일 값·동시 배포 필요. standalone과 내용 동일 파일(MainActivity/PpgUtil/setup_watch.ps1)은 줄바꿈만 달라 미변경. 이 fix는 공통 성격이라 향후 standalone과도 동기 유지.
+
 ## 2026-06-30 — PPG 녹색 LED STOP 시 OFF 수정 (옛 standalone repo에서 이식)
 - 이유: 워치 STOP 버튼으로 종료해도 PPG 녹색 LED가 켜진 채 남음. 원인 = `stopService`(STOP 버튼)는 `onStartCommand`를 거치지 않고 바로 `onDestroy`로 진입하는데, 기존 정리(`ppg.destroy()`)는 `stopForground()`에만 있어 호출되지 않음. 또한 이 수정이 모노레포가 아니라 **옛 독립 저장소 `github.com/BlueSky8bya/Wear_os_Sensor_v3.git`(커밋 a0b5a0b)** 에 올라가 있어 모노레포엔 누락.
 - 목적: ① `PpgUtil.destroy()`를 멱등화 — 리스너 해제(녹색 LED OFF)·`ppgTrackers.clear()`·서비스 disconnect를 try/catch + null-safe로. ② `SensorService`에 `@Volatile cleaned` 가드를 둔 멱등 `cleanup()` 신설, `onDestroy()`에서 호출 → STOP/stopSelf 등 **모든 종료 경로**에서 LED OFF 보장. `stopForground()`는 broadcast + `stopSelf()`만 하고 실제 정리는 onDestroy로 일원화.

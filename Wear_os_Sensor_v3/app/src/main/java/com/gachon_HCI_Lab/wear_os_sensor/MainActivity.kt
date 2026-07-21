@@ -95,6 +95,9 @@ class MainActivity : AppCompatActivity() {
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             needed.add(Manifest.permission.POST_NOTIFICATIONS)
+            // [2026-07-21] 이유: 화면 꺼짐/백그라운드에서 심박 접근 시 필수(없으면 손목 내려 화면 꺼지는 순간 HR 스트림 끊김)
+            //   | 목적: '피트니스 및 웰니스 > 항상 허용' 런타임 요청. standalone 2bf6253 이식.
+            needed.add(Manifest.permission.BODY_SENSORS_BACKGROUND)
         }
         val toRequest = needed.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
