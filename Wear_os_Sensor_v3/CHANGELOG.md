@@ -13,6 +13,12 @@
 
 ---
 
+## 2026-07-21 — setup_watch.ps1: 신형 Wear OS '피트니스 및 웰니스' health 권한 부여 추가
+- 이유: 신형 Wear OS(WOS5+)는 BODY_SENSORS(구형/deprecated)를 `health.READ_HEART_RATE`·`health.READ_HEALTH_DATA_IN_BACKGROUND` 등 세분화 권한으로 쪼갬. 설정 UI '피트니스 및 웰니스'는 이 신형 권한을 보므로, 구형 BODY_SENSORS/appop만 켜면 UI가 계속 '허용 안 됨'으로 남던 문제 실증(7/21, SM-R950). `pm grant`로 신형 health 권한 부여 시 granted=true 됨을 확인.
+- 목적: pm grant로 신형 health 권한까지 부여해 '피트니스 및 웰니스' UI 반영. 검증부에 READ_HEART_RATE granted 확인 추가. 구형 워치는 미선언이라 실패해도 무해(WARN).
+- 파일: `setup_watch.ps1`
+- 비고: 이 권한들은 `REVOKE_WHEN_REQUESTED` 플래그 — 앱이 자체 Health 권한 요청 플로우를 띄우면 회수될 수 있음(추후 관찰 필요). 공통 성격.
+
 ## 2026-07-21 — setup_watch.ps1: 특수 권한(알림·백그라운드 센서) appops 실효화 추가
 - 이유: `pm grant`가 exit 0([OK])을 찍어도 POST_NOTIFICATIONS/BODY_SENSORS_BACKGROUND는 실제 게이트인 appop이 `ignore`로 남아 워치 설정 UI에 '거부'로 표시되는 문제 실증(7/21 현장). 알림은 이전 설치 잔존 importance=NONE, 백그라운드 센서는 포그라운드 appop이 allow여야 유효.
 - 목적: pm grant 뒤 `appops set POST_NOTIFICATION allow` + `appops set BODY_SENSORS allow` → 그 위에서 BODY_SENSORS_BACKGROUND 재부여(순서 중요). 검증부도 granted 비트뿐 아니라 appop 상태를 함께 출력하도록 강화 — 재실행만으로 UI까지 자동 허용.

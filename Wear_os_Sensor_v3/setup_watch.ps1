@@ -102,6 +102,21 @@ if ($LASTEXITCODE -eq 0) { Write-OK "BODY_SENSORS (피트니스/웰니스) appop
 adb @t shell pm grant $pkg android.permission.BODY_SENSORS_BACKGROUND 2>$null
 if ($LASTEXITCODE -eq 0) { Write-OK "BODY_SENSORS_BACKGROUND 재부여(항상 허용)" } else { Write-Warn2 "BODY_SENSORS_BACKGROUND 재부여 실패" }
 
+# 3.6) 신형 health 권한 부여 — 신형 Wear OS(WOS5+)의 '피트니스 및 웰니스' 실제 게이트
+# [2026-07-21] 이유: 신형 Wear OS는 BODY_SENSORS(구형/deprecated)를 health.READ_HEART_RATE 등 세분화 권한으로 쪼갬.
+#   설정 UI '피트니스 및 웰니스'는 이 신형 권한을 보므로, 구형 BODY_SENSORS만 켜면 UI가 '허용 안 됨'으로 남던 문제 실증(7/21).
+# 목적: pm grant로 신형 health 권한까지 부여해 UI 반영. 구형 워치는 미선언이라 grant 실패해도 무해(WARN).
+# 주의: 이 권한들은 REVOKE_WHEN_REQUESTED — 앱이 자체 Health 권한 요청을 띄우면 회수될 수 있음.
+$healthPerms = @(
+    "android.permission.health.READ_HEART_RATE",
+    "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+)
+Write-Step "신형 health 권한 부여 (피트니스 및 웰니스)"
+foreach ($hp in $healthPerms) {
+    adb @t shell pm grant $pkg $hp 2>$null
+    if ($LASTEXITCODE -eq 0) { Write-OK $hp } else { Write-Warn2 "$hp — 미선언/구형 OS일 수 있음(무해)" }
+}
+
 # 4) '사용하지 않을 때 앱 일시정지(hibernation/auto-revoke)' 해제
 Write-Step "앱 일시정지 해제 (appops AUTO_REVOKE_PERMISSIONS_IF_UNUSED = ignore)"
 adb @t shell cmd appops set $pkg AUTO_REVOKE_PERMISSIONS_IF_UNUSED ignore | Out-Host
@@ -130,6 +145,9 @@ $noti = (adb @t shell cmd appops get $pkg POST_NOTIFICATION) 2>$null
 if ("$noti" -match "allow") { Write-OK "알림(POST_NOTIFICATION) appop = allow" } else { Write-Warn2 "알림 appop 미허용: $noti" }
 $body = (adb @t shell cmd appops get $pkg BODY_SENSORS) 2>$null
 if ("$body" -match "allow") { Write-OK "피트니스/웰니스(BODY_SENSORS) appop = allow" } else { Write-Warn2 "BODY_SENSORS appop 미허용: $body" }
+# [2026-07-21] 신형 Wear OS의 '피트니스 및 웰니스' 실제 게이트 = health 권한. granted 확인.
+$hr = (adb @t shell dumpsys package $pkg | Select-String "permission.health.READ_HEART_RATE:.*granted=true") 2>$null
+if ($hr) { Write-OK "health.READ_HEART_RATE granted (신형 UI 반영)" } else { Write-Warn2 "health.READ_HEART_RATE 미부여(구형 OS면 정상)" }
 
 Write-Host "`n=== 셋업 완료 ===" -ForegroundColor Green
 Write-Host "참고: Samsung Health [Dev mode] 등 시스템 API로 토글 불가한 항목은 여전히 수동입니다." -ForegroundColor DarkGray
